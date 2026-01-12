@@ -136,11 +136,17 @@ export class GooglePayParser {
     normalizeWallet(rawWallet) {
         if (!rawWallet) return "Google Pay";
 
-        // Account ending in 3957 or 6720 -> HDFC Debit Card
-        if (rawWallet.includes("3957") || rawWallet.includes("6720")) return "HDFC Debit Card";
+        // Explicit constraints per user request
+        if (rawWallet.includes("3957")) return "HDFC Debit Card";
+        if (rawWallet.includes("6720")) return "SBI Debit Card";
 
-        // Account ending in 7464 -> SBI Debit Card
-        if (rawWallet.includes("7464")) return "SBI Debit Card";
+        // Deprecated/Old handling (cleanup) regarding 7464 or others? 
+        // User states "Only these wallets should exist". 
+        // We will default unknown "Bank Account" patterns to one of them if possible or leave distinct?
+        // Safest is to map these two strictly. 
+        // If we see the old 7464 (maybe a typo earlier?), let's leave it raw for now to avoid data loss 
+        // unless user confirms it's the same account. 
+        // But user said "change using Bank Account X to sbi/hdfc accordingly" - implies strict mapping.
 
         return rawWallet;
     }

@@ -2,7 +2,7 @@
 import { supabase } from "@/app/supabase/supabase-client";
 import { cFormat } from "@/app/utils/currencyFormat";
 import { useEffect, useState } from "react";
-import { BiChevronDown, BiSolidBank } from "react-icons/bi";
+import { BiChevronDown, BiSolidBank, BiTrash, BiEdit, BiCheck, BiX } from "react-icons/bi";
 
 const PAGE_SIZE = 20;
 
@@ -12,6 +12,10 @@ export default function TransactionsWidget() {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState(null);
+
+  // Edit State
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ note: "", wallet: "" });
 
   const fetchData = async (pageIndex, isNewFilter = false) => {
     setLoading(true);
@@ -45,7 +49,8 @@ export default function TransactionsWidget() {
           category: txn.transaction?.category?.name || "Uncategorized",
           wallet: txn.transaction?.wallet?.name || "Unknown",
           note: txn.transaction?.note || "",
-          payee: txn.transaction?.payee || "", // Use payee if available
+          payee: txn.transaction?.payee || "",
+          full_transaction: txn.transaction || {} // Keep full ref for updates
         };
       });
 
@@ -54,6 +59,87 @@ export default function TransactionsWidget() {
       console.error("Fetch error:", error);
     }
     setLoading(false);
+  };
+
+  // Delete Handler
+  const deleteTransaction = async (id) => {
+    if (!confirm("Are you sure you want to delete this transaction?")) return;
+
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (!error) {
+      setData(prev => prev.filter(item => item.id !== id));
+    } else {
+      alert("Failed to delete");
+    }
+  };
+
+  // Edit Handlers
+  const startEditing = (item) => {
+    // Use payee as primary note for editing if available, else note
+    const displayNote = item.payee && item.payee !== 'Unknown' && item.payee !== 'Transfer' ? item.payee : item.note;
+
+    setEditingId(item.id);
+    setEditForm({
+      note: displayNote,
+      wallet: item.wallet
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditForm({ note: "", wallet: "" });
+  };
+
+  const saveEditing = async (item) => {
+    // Construct new transaction JSON
+    // We update payee/note and wallet.
+    // If we are editing 'note/payee', we essentially update both or decide based on context.
+    // For simplicity, let's update 'payee' to the new text if it's a person, or 'note' if description.
+    // To keep it simple: We update 'payee' property and 'note' property to be consistent?
+    // Actually, 'note' usually holds the raw description or full text. 'payee' holds extracted name.
+    // Let's update 'payee' to the new value.
+
+    const updatedJson = {
+      ...item.full_transaction,
+      payee: editForm.note, // We assume user edits the "Title" which maps to Payee
+      wallet: { ...item.full_transaction.wallet, name: editForm.wallet } // Handle wallet object structure if deep, or just name if simple
+    };
+
+    // Handle simple wallet string if it was simple
+    if (typeof item.full_transaction.wallet === 'string') {
+      updatedJson.wallet = editForm.wallet;
+    } else {
+      // Ensure structure exists
+      updatedJson.wallet = {
+        ...(item.full_transaction.wallet || {}),
+        name: editForm.wallet
+      };
+    }
+
+    const { error } = await supabase
+      .from('transactions')
+      .update({ transaction: updatedJson })
+      .eq('id', item.id);
+
+    if (!error) {
+      // Update local state
+      setData(prev => prev.map(d => {
+        if (d.id === item.id) {
+          return {
+            ...d,
+            payee: editForm.note,
+            note: editForm.note, // Sync for display fallback
+            wallet: editForm.wallet,
+            full_transaction: updatedJson
+          };
+        }
+        return d;
+      }));
+      setEditingId(null);
+    } else {
+      alert("Failed to update");
+      console.error(error);
+    }
   };
 
   // Initial load
@@ -134,6 +220,7 @@ export default function TransactionsWidget() {
                   const isIncome = item.type === "income";
                   const className = isIncome ? "text-emerald-600" : "text-gray-900";
                   const sign = isIncome ? "+" : "-";
+                  const isEditing = editingId === item.id;
 
                   // Use payee as primary if available and not generic
                   let title = item.payee && item.payee !== 'Unknown' && item.payee !== 'Transfer' ? item.payee : item.note;
@@ -154,25 +241,75 @@ export default function TransactionsWidget() {
                           {isIncome ? '↓' : '↑'}
                         </div>
 
-                        <div className="flex flex-col min-w-0 gap-0.5">
-                          <span className="text-gray-900 font-semibold text-base truncate" title={item.note}>
-                            {title}
-                          </span>
-                          <span className="text-gray-400 flex gap-1.5 items-center text-xs">
-                            <span className="uppercase tracking-wide text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
-                              {item.wallet.replace('Debit Card', 'Card')}
+                        <div className="flex flex-col min-w-0 gap-0.5 w-full pr-4">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editForm.note}
+                              onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                              className="border border-gray-300 rounded px-2 py-1 text-sm w-full mb-1"
+                              placeholder="Payee / Description"
+                            />
+                          ) : (
+                            <span className="text-gray-900 font-semibold text-base truncate" title={item.note}>
+                              {title}
                             </span>
-                            {item.category !== 'Uncategorized' && (
-                              <span className="text-gray-300">• {item.category}</span>
-                            )}
-                          </span>
+                          )}
+
+                          {isEditing ? (
+                            <select
+                              value={editForm.wallet}
+                              onChange={(e) => setEditForm({ ...editForm, wallet: e.target.value })}
+                              className="border border-gray-300 rounded px-2 py-0.5 text-xs w-full max-w-[150px]"
+                            >
+                              <option value="Unknown">Select Wallet...</option>
+                              <option value="HDFC Debit Card">HDFC Debit Card</option>
+                              <option value="SBI Debit Card">SBI Debit Card</option>
+                              <option value="Cash">Cash</option>
+                              <option value="Google Pay">Google Pay</option>
+                            </select>
+                          ) : (
+                            <span className="text-gray-400 flex gap-1.5 items-center text-xs">
+                              <span className="uppercase tracking-wide text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
+                                {item.wallet.replace('Debit Card', 'Card')}
+                              </span>
+                              {item.category !== 'Uncategorized' && (
+                                <span className="text-gray-300">• {item.category}</span>
+                              )}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <div className={`text-right flex flex-col justify-center`}>
-                        <span className={`${className} text-lg font-bold whitespace-nowrap`}>
-                          {sign} {cFormat(item.amount)}
-                        </span>
+                      <div className={`text-right flex flex-col justify-center items-end`}>
+                        {isEditing ? (
+                          <div className="flex gap-2">
+                            <button onClick={() => saveEditing(item)} className="p-2 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200"><BiCheck size={18} /></button>
+                            <button onClick={cancelEditing} className="p-2 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200"><BiX size={18} /></button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className={`${className} text-lg font-bold whitespace-nowrap group-hover:hidden`}>
+                              {sign} {cFormat(item.amount)}
+                            </span>
+                            <div className="hidden group-hover:flex gap-2 animate-fadeIn">
+                              <button
+                                onClick={() => startEditing(item)}
+                                className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                                title="Edit"
+                              >
+                                <BiEdit size={18} />
+                              </button>
+                              <button
+                                onClick={() => deleteTransaction(item.id)}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                title="Delete"
+                              >
+                                <BiTrash size={18} />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   );

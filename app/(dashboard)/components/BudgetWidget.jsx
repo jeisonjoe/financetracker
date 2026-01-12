@@ -9,54 +9,7 @@ import {
 
 export default function BudgetWidget() {
   const data = [
-    {
-      id: 1,
-      name: "Travel",
-      icon: BiCar,
-      total: 3000,
-      spent: 1256,
-      available: 3000,
-    },
-    {
-      id: 2,
-      icon: BiVideo,
-      name: "Entertainment",
-      total: 1500,
-      spent: 841,
-      available: 22468,
-    },
-    {
-      id: 3,
-      name: "Shopping",
-      icon: BiShoppingBag,
-      total: 3000,
-      spent: 126,
-      available: 800,
-    },
-    {
-      id: 4,
-      name: "Shopping",
-      icon: BiShoppingBag,
-      total: 3000,
-      spent: 126,
-      available: 800,
-    },
-    {
-      id: 5,
-      name: "Shopping",
-      icon: BiShoppingBag,
-      total: 3000,
-      spent: 126,
-      available: 800,
-    },
-    {
-      id: 6,
-      name: "Shopping",
-      icon: BiShoppingBag,
-      total: 3000,
-      spent: 126,
-      available: 800,
-    },
+
   ];
 
   return (
