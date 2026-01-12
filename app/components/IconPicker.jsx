@@ -1,14 +1,21 @@
 "use client";
 import * as BiIcons from "react-icons/bi";
 import * as FcIcons from "react-icons/fc";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 const ALL_ICONS = [
   ...Object.entries(FcIcons).map(([name, Icon]) => ({ name, Icon })),
   ...Object.entries(BiIcons).map(([name, Icon]) => ({ name, Icon })),
 ];
 
-export default function IconPicker({ selected, onSelect }) {
+const IconPicker = memo(function IconPicker({ selected, onSelect }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -116,4 +123,6 @@ export default function IconPicker({ selected, onSelect }) {
       </div>
     </div>
   );
-}
+});
+
+export default IconPicker;

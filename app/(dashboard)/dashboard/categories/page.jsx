@@ -5,13 +5,18 @@ import RenderIcon from "@/app/components/RenderIcon";
 import AddCategoryPane from "@/app/(dashboard)/components/AddCategoryPane";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import { useCategories } from "@/app/supabase/categories";
+import LoadingAnim from "@/app/components/LoadingAnim";
 
 export default function Page() {
   const { open } = useRhsSidebarStore();
   const { categories, refresh, isLoading } = useCategories();
 
-  if (!categories.length) {
-    return <div className="">No categories found</div>;
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        <LoadingAnim />
+      </div>
+    );
   }
 
   return (
