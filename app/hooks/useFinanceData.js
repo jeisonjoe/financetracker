@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AnalyticsApi,
   CategoryApi,
@@ -45,6 +50,31 @@ export function useWalletsQuery() {
   });
 }
 
+export function useTransactionsInfinite({
+  pageSize = 20,
+  type = "",
+  search = "",
+  wallet = "",
+  category = "",
+} = {}) {
+  const filters = { pageSize, type, search, wallet, category };
+  return useInfiniteQuery({
+    queryKey: FINANCE_QUERY_KEYS.transactions(filters),
+    initialPageParam: 0,
+    queryFn: ({ pageParam = 0 }) =>
+      TransactionApi.list({
+        page: pageParam,
+        pageSize,
+        type,
+        search,
+        wallet,
+        category,
+      }),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage?.hasMore ? allPages.length : undefined,
+  });
+}
+
 export function useTransactionMutations() {
   const queryClient = useQueryClient();
 
@@ -52,6 +82,7 @@ export function useTransactionMutations() {
     queryClient.invalidateQueries({ queryKey: ["analytics"] });
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
     queryClient.invalidateQueries({ queryKey: FINANCE_QUERY_KEYS.wallets });
+    queryClient.invalidateQueries({ queryKey: FINANCE_QUERY_KEYS.planning });
   };
 
   const createTransaction = useMutation({
