@@ -16,14 +16,18 @@ export default function CategoryPage({ categories }) {
     <div className="flex flex-col gap-4">
       <div className="flex gap-4 w-full h-[88vh]">
         {/* Col 1 */}
-        <div className="bg-white rounded-lg h-full p-6 flex flex-col gap-4 w-7/12">
+        <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl h-full p-6 flex flex-col gap-4 w-7/12 text-zinc-200">
           <div className="w-full flex items-center gap-4">
-            <div className="grow bg-gray-100 flex items-center rounded-md p-3 px-4 gap-2">
+            <div className="grow bg-white/[0.04] border border-white/[0.06] flex items-center rounded-xl p-3 px-4 gap-2">
               <BiSearch className="text-zinc-500" />
-              <input type="text" placeholder="Search by name..." />
+              <input
+                type="text"
+                placeholder="Search by name..."
+                className="bg-transparent w-full text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
+              />
             </div>
             <button
-              className="bg-accent text-white flex items-center gap-2 p-2.5 rounded-md cursor-pointer"
+              className="bg-zinc-100 hover:bg-white text-zinc-950 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium cursor-pointer transition-colors"
               onClick={() => open(AddCategoryPane)}
             >
               <BiPlus />
@@ -36,16 +40,16 @@ export default function CategoryPage({ categories }) {
               return (
                 <div
                   key={cat.id}
-                  className="flex justify-between gap-4 p-3 rounded-md cursor-pointer transition-all ease-in-out duration-300 hover:bg-gray-100"
+                  className="flex justify-between gap-4 p-3 rounded-xl cursor-pointer transition-colors hover:bg-white/[0.04]"
                 >
                   <div className="flex items-end-safe gap-4">
                     <RenderIcon
                       icon={cat.icon}
-                      props={{ className: "text-2xl" }}
+                      props={{ className: "text-2xl text-zinc-400" }}
                     />
-                    <span className="text-base">{cat.name}</span>
+                    <span className="text-base text-zinc-200">{cat.name}</span>
                   </div>
-                  <button className="cursor-pointer focus:outline-none">
+                  <button className="cursor-pointer text-zinc-500 hover:text-red-400 focus:outline-none transition-colors">
                     <BiTrash className="text-lg" />
                   </button>
                 </div>
@@ -55,8 +59,8 @@ export default function CategoryPage({ categories }) {
         </div>
 
         {/* Col 2 */}
-        <div className="bg-white rounded-lg h-full w-5/12 p-6">
-          <h2 className="text-accent text-2xl">Charts </h2>
+        <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl h-full w-5/12 p-6">
+          <h2 className="text-zinc-200 text-xl font-medium">Charts</h2>
         </div>
       </div>
     </div>

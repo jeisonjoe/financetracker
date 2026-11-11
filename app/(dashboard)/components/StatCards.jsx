@@ -1,86 +1,115 @@
+"use client";
+
 import { IoWalletOutline } from "react-icons/io5";
-import { BiCoinStack, BiRupee } from "react-icons/bi";
+import { BiCoinStack } from "react-icons/bi";
 import { MdOutlineTrendingDown } from "react-icons/md";
 import { GoArrowUp, GoArrowDown } from "react-icons/go";
-import { cFormat } from "@/app/utils/currencyFormat";
+import { formatAmountParts } from "@/app/utils/currencyFormat";
+import { useAnalytics } from "@/app/hooks/useFinanceData";
+import { useAuth } from "@/app/contexts/AuthContext";
 
-export default function StatCards() {
+export default function StatCards({ period = "this_month" }) {
+  const { data, isLoading } = useAnalytics(period);
+  const { user } = useAuth();
+  const currency = user?.currency || "INR";
+
+  const summary = data?.summary || {
+    balance: 0,
+    income: 0,
+    expense: 0,
+    deltas: { balance: 0, income: 0, expense: 0 },
+  };
+
+  const today = new Date();
+  const day = today.getDate();
+  const monthYear = today.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+  const weekday = today.toLocaleDateString("en-US", { weekday: "long" });
+
   const statCards = [
     {
-      name: "Balance",
+      name: "Balance (Net)",
       icon: IoWalletOutline,
-      amount: [23680, 51],
-      progression: ["inc", 12.8, "+118.8 than last month"],
+      amount: summary.balance,
+      delta: summary.deltas.balance,
+      tagText: `${Math.abs(summary.deltas.balance)}% vs last month`,
+      positive: summary.deltas.balance >= 0,
     },
     {
       name: "Earnings",
       icon: BiCoinStack,
-      amount: [968, 41],
-      progression: ["inc", 12.8, "+118.8 than last month"],
+      amount: summary.income,
+      delta: summary.deltas.income,
+      tagText: `${Math.abs(summary.deltas.income)}% vs last month`,
+      positive: summary.deltas.income >= 0,
     },
     {
       name: "Spendings",
       icon: MdOutlineTrendingDown,
-      amount: [169, 43],
-      progression: ["dec", 12.8, "-6.85 than last month"],
+      amount: summary.expense,
+      delta: summary.deltas.expense,
+      tagText: `${Math.abs(summary.deltas.expense)}% vs last month`,
+      positive: summary.deltas.expense <= 0,
     },
   ];
 
   return (
-    <div className="flex gap-4 pt-4">
-      {statCards.map((card, i) => {
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {statCards.map((card) => {
+        const parts = formatAmountParts(card.amount, currency);
+
         return (
           <div
-            key={card.name + i}
-            className="flex flex-col grow gap-4 bg-white pr-16 p-4 rounded-lg"
+            key={card.name}
+            className="flex flex-col justify-between gap-3 bg-surface-elevated/50 p-5 rounded-xl border border-white/[0.06]"
           >
-            <div className="flex items-center text-sec-96 gap-2">
-              <card.icon />
-              {card.name}
+            <div className="flex items-center text-zinc-500 gap-2 text-sm font-medium">
+              <card.icon size={18} />
+              <span>{card.name}</span>
             </div>
 
-            <div className="flex items-center gap-6">
-              <div className="flex items-baseline text-amount-primary">
-                <BiRupee size={24} />
-                <span className="text-5xl">{cFormat(card.amount[0])}</span>
-                <span className="text-2xl font-light">.{card.amount?.[1]}</span>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-baseline text-zinc-100">
+                <span className="text-2xl font-medium mr-0.5 text-zinc-300">
+                  {parts.sign}
+                  {parts.symbol}
+                </span>
+                <span className="text-3xl font-semibold">
+                  {isLoading ? "..." : parts.whole}
+                </span>
+                <span className="text-base font-normal text-zinc-500">
+                  .{parts.decimal}
+                </span>
               </div>
-              {card.progression && (
-                <div
-                  className={`flex items-center gap-1.5 rounded-full p-2 pr-3 pb-1.5 py-1 font-regular text-xs ${
-                    card.progression[0] == "inc"
-                      ? "text-green-100 bg-green-10"
-                      : "text-red-100 bg-red-10"
-                  }`}
-                >
-                  {card.progression[0] == "inc" ? (
-                    <GoArrowUp />
-                  ) : (
-                    <GoArrowDown />
-                  )}
-                  {card.progression[1] + "%"}
-                </div>
-              )}
+
+              <div
+                className={`text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-medium ${
+                  card.positive
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : "bg-red-500/10 text-red-400"
+                }`}
+              >
+                {card.positive ? <GoArrowUp size={12} /> : <GoArrowDown size={12} />}
+                <span>{card.tagText}</span>
+              </div>
             </div>
 
-            <div
-              className={`text-base  px-2 ${
-                card.progression[0] == "inc" ? "text-green-100" : "text-red-100"
-              }`}
-            >
-              {card.progression[2]}
-            </div>
+            <div className="text-xs text-zinc-500">This Month</div>
           </div>
         );
       })}
 
-      <div className="flex items-center flex-8 gap-4 bg-white pr-16 pl-12 p-4 rounded-lg">
-        <div className="p-6 px-7 rounded-full bg-accent text-white  text-2xl">
-          14
+      <div className="flex items-center gap-5 bg-surface-elevated/50 p-5 rounded-xl border border-white/[0.06]">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-100 text-zinc-950 text-2xl font-semibold flex items-center justify-center shrink-0">
+          {day}
         </div>
-        <div className="flex flex-col text-lg">
-          <span className="">September 2025</span>
-          <span className="text-sec-96">Monday</span>
+        <div className="flex flex-col min-w-0">
+          <span className="text-lg font-semibold text-zinc-100 truncate">
+            {monthYear}
+          </span>
+          <span className="text-sm text-zinc-500 font-medium">{weekday}</span>
         </div>
       </div>
     </div>

@@ -1,152 +1,187 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { supabase } from '@/app/supabase/supabase-client';
+
+import { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { TransactionApi } from "@/app/services/ApiClient";
+import { cFormat } from "@/app/utils/currencyFormat";
 
 export default function ImportPage() {
-    const [transactions, setTransactions] = useState([]);
-    const [status, setStatus] = useState('Idle');
-    const [lastError, setLastError] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [status, setStatus] = useState("Idle");
+  const [lastError, setLastError] = useState(null);
+  const [busy, setBusy] = useState(false);
 
-    useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            setCurrentUser(user);
-        });
-    }, []);
+  const { user, isLoading } = useAuth();
+  const currency = user?.currency || "INR";
 
-    const fetchParsedData = async () => {
-        setStatus('Fetching & Parsing data...');
-        setLastError(null);
-        try {
-            const res = await fetch('/api/import-data');
-            const data = await res.json();
+  const fetchParsedData = async () => {
+    setBusy(true);
+    setStatus("Parsing Google Pay activity...");
+    setLastError(null);
+    try {
+      const data = await TransactionApi.previewImport();
+      setTransactions(data.transactions || []);
+      setStatus(`Loaded ${data.count} transactions. Ready to import.`);
+    } catch (e) {
+      setLastError(e.message);
+      setStatus("Failed to load data");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-            if (data.error) {
-                setLastError(data.error);
-                setStatus('Failed to fetch data');
-                return;
-            }
+  const startImport = async () => {
+    if (!user || transactions.length === 0) return;
+    setBusy(true);
+    setStatus("Importing transactions...");
+    setLastError(null);
 
-            setTransactions(data.transactions || []);
-            setStatus(`Loaded ${data.count} transactions. Ready to Import.`);
-        } catch (e) {
-            setLastError(e.message);
-            setStatus('Error fetching data');
-        }
-    };
+    const payload = transactions.map((tx) => ({
+      amount: tx.amount,
+      type: tx.type,
+      created_at: tx.iso_date,
+      transaction: {
+        note: tx.note,
+        category: { key: "Imported", name: "Imported" },
+        wallet: { key: tx.wallet, name: tx.wallet },
+        payee: tx.payee,
+        external_id: tx.external_id,
+        imported_at: new Date().toISOString(),
+      },
+    }));
 
-    const startImport = async () => {
-        if (!currentUser) return;
-        setStatus('Importing via Prisma...');
+    try {
+      const result = await TransactionApi.bulkSave(payload);
+      setStatus(
+        `Completed. Imported: ${result.imported}, Updated: ${result.updated}`
+      );
+      if (result.firstError) {
+        setLastError(`Some items failed. First error: ${result.firstError}`);
+      }
+    } catch (e) {
+      setLastError(e.message);
+      setStatus("Import failed");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-        // Prepare the payload
-        const payload = transactions.map(tx => ({
-            amount: tx.amount,
-            type: tx.type,
-            created_at: tx.iso_date,
-            transaction: {
-                note: tx.note,
-                category: { name: "Imported" },
-                wallet: { name: tx.wallet },
-                payee: tx.payee,
-                external_id: tx.external_id,
-                imported_at: new Date().toISOString()
-            }
-        }));
-
-        try {
-            const res = await fetch('/api/save-transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transactions: payload, userId: currentUser.id })
-            });
-            const result = await res.json();
-
-            if (result.error) {
-                setLastError(result.error);
-                setStatus('Full Import Failed');
-            } else {
-                setStatus(`Completed! Imported: ${result.imported}, Failed: ${result.failed}`);
-                if (result.firstError) {
-                    setLastError(`Some items failed. First error: ${result.firstError}`);
-                }
-            }
-        } catch (e) {
-            setLastError(e.message);
-            setStatus('Network or Server Error');
-        }
-    };
-
-    return (
-        <div className="p-8 bg-gray-50 min-h-screen text-gray-800 font-sans">
-            <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-sm">
-                <h1 className="text-2xl font-bold mb-6 text-gray-900">Import Google Pay Transactions</h1>
-
-                <div className="mb-6 space-y-2">
-                    <p><strong>User:</strong> {currentUser ? currentUser.email : 'Loading...'}</p>
-                    <p><strong>Status:</strong> <span className="font-medium text-blue-600">{status}</span></p>
-                    {lastError && (
-                        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded font-mono whitespace-pre-wrap">
-                            {lastError}
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex gap-4 mb-6">
-                    <button
-                        onClick={fetchParsedData}
-                        className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                        1. Load Data
-                    </button>
-                    <button
-                        onClick={startImport}
-                        disabled={transactions.length === 0 || !currentUser}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        2. Start Import
-                    </button>
-                </div>
-
-                {transactions.length > 0 && (
-                    <div className="border rounded-lg overflow-hidden">
-                        <div className="bg-gray-100 p-3 font-semibold border-b flex justify-between">
-                            <span>Preview ({transactions.length} items)</span>
-                        </div>
-                        <div className="max-h-[500px] overflow-auto p-0">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
-                                    <tr>
-                                        <th className="px-4 py-3">Date</th>
-                                        <th className="px-4 py-3">Details</th>
-                                        <th className="px-4 py-3">Amount</th>
-                                        <th className="px-4 py-3">ID</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {transactions.map((tx, i) => (
-                                        <tr key={i} className="border-b hover:bg-gray-50">
-                                            <td className="px-4 py-3 whitespace-nowrap">{tx.date}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium">{tx.note}</div>
-                                                <div className="text-xs text-gray-500">
-                                                    Wallet: {tx.wallet} | Payee: {tx.payee}
-                                                </div>
-                                            </td>
-                                            <td className={`px-4 py-3 font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                                {tx.type === 'income' ? '+' : '-'} ₹{tx.amount}
-                                            </td>
-                                            <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                                                {tx.external_id}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-            </div>
+  return (
+    <div className="p-4 sm:p-8 bg-app-bg min-h-screen text-zinc-100">
+      <div className="max-w-5xl mx-auto bg-surface p-6 sm:p-8 rounded-3xl border border-white/[0.06] flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-light text-zinc-100">
+              Import Google Pay Transactions
+            </h1>
+            <p className="text-sm text-zinc-500 mt-1">
+              Preview and deduplicate entries from your activity export.
+            </p>
+          </div>
+          <Link
+            href="/dashboard"
+            className="px-4 py-2 bg-surface-elevated hover:bg-surface-hover border border-white/[0.06] rounded-full text-sm text-zinc-200 transition-colors"
+          >
+            Back to Dashboard
+          </Link>
         </div>
-    );
+
+        <div className="p-4 rounded-2xl bg-surface-elevated border border-white/[0.05] flex flex-wrap items-center justify-between gap-4 text-sm">
+          <div>
+            <span className="text-zinc-500">Signed in as: </span>
+            <span className="font-normal text-zinc-200">
+              {isLoading ? (
+                "Loading..."
+              ) : user ? (
+                user.email
+              ) : (
+                <Link href="/" className="text-zinc-100 underline">
+                  Sign in to import
+                </Link>
+              )}
+            </span>
+          </div>
+          <div>
+            <span className="text-zinc-500">Status: </span>
+            <span className="font-medium text-zinc-200">{status}</span>
+          </div>
+        </div>
+
+        {lastError && (
+          <div className="p-3.5 bg-red-10 text-red-100 text-sm rounded-xl whitespace-pre-wrap">
+            {lastError}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={fetchParsedData}
+            disabled={busy || !user}
+            className="px-5 py-2.5 bg-surface-elevated hover:bg-surface-hover border border-white/[0.07] text-zinc-200 rounded-full text-sm transition-colors cursor-pointer disabled:opacity-50"
+          >
+            1. Load Data
+          </button>
+          <button
+            type="button"
+            onClick={startImport}
+            disabled={busy || transactions.length === 0 || !user}
+            className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 rounded-full text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            2. Start Import
+          </button>
+        </div>
+
+        {transactions.length > 0 && (
+          <div className="border border-white/[0.06] rounded-2xl overflow-hidden bg-surface-elevated/40">
+            <div className="bg-surface-elevated px-4 py-3 text-sm font-normal text-zinc-300 border-b border-white/[0.06]">
+              Preview ({transactions.length} items)
+            </div>
+            <div className="max-h-[480px] overflow-auto scrollbar-minimal">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-zinc-500 bg-surface border-b border-white/[0.06] sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 font-normal">Date</th>
+                    <th className="px-4 py-3 font-normal">Details</th>
+                    <th className="px-4 py-3 font-normal">Amount</th>
+                    <th className="px-4 py-3 font-normal">Reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((tx, i) => (
+                    <tr
+                      key={tx.external_id || i}
+                      className="border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.03]"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-400">
+                        {tx.date}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-normal text-zinc-200">{tx.note}</div>
+                        <div className="text-xs text-zinc-500 mt-0.5">
+                          Wallet: {tx.wallet} • Payee: {tx.payee}
+                        </div>
+                      </td>
+                      <td
+                        className={`px-4 py-3 font-medium whitespace-nowrap ${
+                          tx.type === "income" ? "text-green-100" : "text-red-100"
+                        }`}
+                      >
+                        {tx.type === "income" ? "+" : "-"}
+                        {cFormat(tx.amount, { currency })}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-zinc-500">
+                        {tx.external_id}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

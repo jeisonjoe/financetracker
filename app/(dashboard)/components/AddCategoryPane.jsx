@@ -3,45 +3,22 @@
 import IconPicker from "@/app/components/IconPicker";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
-import { useCategories } from "@/app/supabase/categories";
-import { supabase } from "@/app/supabase/supabase-client";
+import { useCategoryMutations } from "@/app/hooks/useFinanceData";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export default function AddCategoryPane() {
+export default function AddCategoryPane({ category: editCategory = null }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [icon, setIcon] = useState("");
+  const [name, setName] = useState(editCategory?.name || "");
+  const [type, setType] = useState(editCategory?.type || "expense");
+  const [monthlyBudget, setMonthlyBudget] = useState(
+    editCategory?.monthly_budget ? String(editCategory.monthly_budget) : ""
+  );
+  const [icon, setIcon] = useState(editCategory?.icon || null);
+
   const { isOpen, close: closeRhs, setProps } = useRhsSidebarStore();
   const { user } = useAuth();
-  const { refresh } = useCategories();
-
-  const handleSubmitData = async () => {
-    setIsLoading(true);
-
-    if (!user) {
-      return;
-    }
-    if (!name || !icon) {
-      toast.error("Please provide all the required information");
-      return;
-    }
-    const record = {
-      user_id: user.id,
-      name,
-      icon,
-    };
-    const { error } = await supabase.from("categories").insert(record).single();
-    if (error) {
-      toast.error(error.message);
-    }
-    toast.success(`Created category : ${name}`);
-    setName("");
-    setIcon("");
-    closeRhs();
-    setIsLoading(false);
-    refresh();
-  };
+  const { createCategory, updateCategory } = useCategoryMutations();
 
   const handleClose = () => {
     if (isLoading) return;
@@ -49,44 +26,116 @@ export default function AddCategoryPane() {
   };
 
   useEffect(() => {
-    setProps({ title: "New Category", onclose: handleClose });
-  }, [isOpen]);
+    setProps({
+      title: editCategory ? "Edit Category" : "New Category",
+      onclose: handleClose,
+    });
+  }, [isOpen, editCategory]);
+
+  const handleSubmitData = async () => {
+    if (!user) return;
+    if (!name.trim()) {
+      toast.error("Please enter a category name");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        name: name.trim(),
+        type,
+        icon,
+        monthly_budget: Number(monthlyBudget) || 0,
+      };
+
+      if (editCategory) {
+        await updateCategory.mutateAsync({ id: editCategory.id, payload });
+        toast.success(`Updated category: ${name}`);
+      } else {
+        await createCategory.mutateAsync(payload);
+        toast.success(`Created category: ${name}`);
+      }
+      closeRhs();
+    } catch (error) {
+      toast.error(error.message || "Failed to save category");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <>
-      {/* form */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between px-6 bg-app-bg py-3.5 rounded-lg">
+    <div className="flex flex-col justify-between h-full gap-6">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-normal text-zinc-500 pl-1">Name</label>
           <input
             type="text"
-            className="grow text-base focus:outline-none"
-            placeholder="What is this for?"
-            autoCorrect="off"
-            autoCapitalize="on"
-            spellCheck="false"
-            value={name || ""}
-            onInput={(e) => setName(e.target.value)}
+            className="w-full px-4 py-3 bg-surface-elevated border border-white/[0.06] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+            placeholder="e.g. Dining Out"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
 
-        <IconPicker selected={icon} onSelect={(icon) => setIcon(icon)} />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-normal text-zinc-500 pl-1">Type</label>
+          <div className="flex bg-surface-elevated border border-white/[0.06] p-1 rounded-full self-start">
+            {["expense", "income", "both"].map((opt) => (
+              <button
+                type="button"
+                key={opt}
+                onClick={() => setType(opt)}
+                className={`px-4 py-1.5 rounded-full text-xs font-normal capitalize cursor-pointer transition-colors ${
+                  type === opt ? "bg-zinc-100 text-zinc-950" : "text-zinc-500"
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-normal text-zinc-500 pl-1">
+            Monthly Budget Limit (optional)
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            className="w-full px-4 py-3 bg-surface-elevated border border-white/[0.06] rounded-xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-white/20"
+            placeholder="0 for no limit"
+            value={monthlyBudget}
+            onChange={(e) => setMonthlyBudget(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-normal text-zinc-500 pl-1">Icon</label>
+          <IconPicker selected={icon} onSelect={setIcon} />
+        </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 pt-4 border-t border-white/[0.06]">
         <button
-          className="w-1/2 py-4 bg-gray-ef text-gray-4c rounded-lg cursor-pointer"
+          type="button"
+          className="flex-1 py-3 bg-surface-elevated text-zinc-300 font-normal rounded-full cursor-pointer hover:bg-surface-hover transition-colors"
           onClick={handleClose}
         >
           Cancel
         </button>
         <button
-          className="w-1/2 py-4 bg-accent text-white rounded-lg cursor-pointer"
+          type="button"
+          className="flex-1 py-3 bg-zinc-100 hover:bg-white text-zinc-950 font-medium rounded-full cursor-pointer transition-colors disabled:opacity-60"
           onClick={handleSubmitData}
           disabled={isLoading}
         >
-          Add Category
+          {isLoading
+            ? "Saving..."
+            : editCategory
+            ? "Save Changes"
+            : "Add Category"}
         </button>
       </div>
-    </>
+    </div>
   );
 }

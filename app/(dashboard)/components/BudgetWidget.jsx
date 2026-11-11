@@ -1,70 +1,101 @@
+"use client";
+
+import { useState } from "react";
 import { cFormat } from "@/app/utils/currencyFormat";
-import {
-  BiCar,
-  BiChevronDown,
-  BiRupee,
-  BiShoppingBag,
-  BiVideo,
-} from "react-icons/bi";
+import { useAnalytics } from "@/app/hooks/useFinanceData";
+import { useAuth } from "@/app/contexts/AuthContext";
+import PeriodSelector from "@/app/components/PeriodSelector";
+import RenderIcon from "@/app/components/RenderIcon";
 
-export default function BudgetWidget() {
-  const data = [
+export default function BudgetWidget({ limit = 6 }) {
+  const [period, setPeriod] = useState("this_month");
+  const { data, isLoading } = useAnalytics(period);
+  const { user } = useAuth();
+  const currency = user?.currency || "INR";
 
-  ];
+  const categories = (data?.categoryBreakdown || []).slice(0, limit);
 
   return (
-    <div className="grow flex flex-col gap-2 bg-white p-6 rounded-lg h-full ">
-      <div className="flex justify-between items-center">
-        <span className="text-lg text-card-title">Budgets</span>
-        <button className="flex gap-2 items-center text-sec-96 bg-app-bg p-4 py-2 rounded-lg text-sm">
-          This Month <BiChevronDown />
-        </button>
+    <div className="flex flex-col gap-4 bg-surface-elevated/50 rounded-2xl border border-white/[0.06] p-5 h-full min-h-[380px]">
+      <div className="flex justify-between items-center gap-2">
+        <span className="text-lg text-zinc-200 font-normal">
+          Spending Analysis
+        </span>
+        <PeriodSelector value={period} onChange={setPeriod} />
       </div>
-      <div className="px-2 overflow-auto w-full no-scrollbar ">
-        {data.map((item) => {
-          const spentPercent = Math.floor((item.spent / item.total) * 100);
-          return (
-            <div
-              key={item.id}
-              className="budget-card-item flex flex-col gap-4 py-6 border-b border-b-zinc-100 w-full last-of-type:border-b-0"
-            >
-              <div className="flex justify-between items-center w-full">
-                <div className="flex gap-2 items-center">
-                  <item.icon className="text-gray-5a" />
-                  <span className="text-lg">{item.name}</span>
+
+      <div className="overflow-y-auto w-full scrollbar-minimal grow pr-1">
+        {isLoading ? (
+          <div className="flex flex-col gap-4 mt-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-14 w-full bg-surface-elevated rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center text-zinc-500 text-sm py-16">
+            No expenses in this period
+          </div>
+        ) : (
+          categories.map((item) => {
+            const hasBudget = item.budget > 0;
+            const barWidth = hasBudget ? item.budgetPercent : item.sharePercent;
+            const barColor = item.overBudget
+              ? "bg-red-100"
+              : item.sharePercent > 50
+              ? "bg-accent"
+              : "bg-zinc-400";
+
+            return (
+              <div
+                key={item.id || item.name}
+                className="flex flex-col gap-2.5 py-4 border-b border-white/[0.05] w-full last-of-type:border-b-0"
+              >
+                <div className="flex justify-between items-center w-full gap-3">
+                  <div className="flex gap-3 items-center min-w-0">
+                    <div className="w-9 h-9 bg-white/[0.06] rounded-full text-zinc-300 flex items-center justify-center shrink-0">
+                      <RenderIcon icon={item.icon} props={{ className: "text-lg" }} />
+                    </div>
+                    <span className="text-sm sm:text-base font-normal text-zinc-200 truncate">
+                      {item.name}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1 text-zinc-200 font-medium shrink-0">
+                    <span className="text-base">
+                      {cFormat(item.spent, { currency })}
+                    </span>
+                    {hasBudget && (
+                      <span className="text-xs text-zinc-500 font-normal">
+                        / {cFormat(item.budget, { currency })}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <BiRupee size={16} className="text-gray-5a" />
-                  <span className="text-xl">{cFormat(item.total)}</span>
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>
+                      {hasBudget
+                        ? `${item.budgetPercent}% of budget`
+                        : `${item.sharePercent}% of period spend`}
+                    </span>
+                    {item.overBudget && (
+                      <span className="text-red-100 font-medium">Over budget</span>
+                    )}
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      style={{ width: `${Math.min(100, barWidth)}%` }}
+                      className={`h-full rounded-full transition-all duration-500 ease-out ${barColor}`}
+                    />
+                  </div>
                 </div>
               </div>
-
-              <div className="flex flex-col gap-2.5">
-                <div className="progress-line w-full h-[4px] rounded-full bg-accent/10">
-                  <div
-                    style={{ width: spentPercent + "%" }}
-                    className={` h-full bg-accent rounded-full`}
-                  ></div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2 items-baseline">
-                    <span className="text-base text-accent-mild">
-                      {cFormat(item.spent)}
-                    </span>
-                    <span className="font-light text-sm ">Spent</span>
-                  </div>
-                  <div className="flex gap-2 items-baseline">
-                    <span className="text-base text-accent-mild">
-                      {cFormat(item.available)}
-                    </span>
-                    <span className="font-light text-sm">Available</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );
