@@ -1,92 +1,88 @@
 "use client";
 
-import { supabase } from "@/app/supabase/supabase-client";
-import { useRouter } from "next/navigation";
+import AuthLayout from "@/app/components/AuthLayout";
+import { AuthApi } from "@/app/services/ApiClient";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
-  const [data, setData] = useState({});
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [devResetUrl, setDevResetUrl] = useState("");
 
-  const handleData = (key, value) => {
-    setData((prev) => {
-      return {
-        ...prev,
-        [key]: value,
-      };
-    });
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
+    setDevResetUrl("");
     try {
-      const { email } = data;
-      if (!email) {
+      if (!email.trim()) {
         throw new Error("Please enter a valid email");
       }
-      const { data: response, error } =
-        await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-      if (error) {
-        throw error;
-      } else {
-        toast.success("Password reset mail has been sent to your email");
+      const res = await AuthApi.forgotPassword(email);
+      toast.success("Password reset instructions prepared");
+      if (res.resetUrl) {
+        setDevResetUrl(res.resetUrl);
       }
     } catch (error) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <main className="p-6 flex w-full h-screen">
-      <div className="w-1/2 h-full flex items-center justify-start p-16 pb-32">
-        <div className="">
-          <h1 className="text-lg text-accent font-medium">FinTrack</h1>
-          <div className="flex flex-col gap-5 mt-24">
-            <span className="text-6xl text-accent-mild">Get started with</span>
-            <h2 className="text-6xl font-bold text-accent">FinTrack.</h2>
-          </div>
-          <div className="text-xl text-sec-96 mt-12 max-w-xl leading-[1.35]">
-            ”Your money, organized and optimized for smarter spending and
-            stronger financial growth.”
-          </div>
-        </div>
-      </div>
-      <div className="w-1/2 h-full bg-app-bg rounded-2xl p-16 px-20">
-        <div className="flex flex-col gap-12 items-start h-full justify-center">
-          <h2 className="text-accent text-4xl font-semibold px-1">
+    <AuthLayout>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-9 items-start w-full">
+        <div>
+          <h2 className="text-zinc-100 text-3xl sm:text-4xl font-light">
             Reset your password
           </h2>
-          <div className="w-full flex flex-col gap-6">
-            <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="lastName" className="px-2 text-sm text-zinc-400 ">
-                Enter registered email
-              </label>
-              <input
-                className=" border-1 bg-white border-zinc-100 text-zinc-800 rounded-lg p-4 py-3.5 text-base focus:outline-none"
-                type="text"
-                name="email"
-                id="email"
-                placeholder=""
-                value={data.email || ""}
-                onInput={(e) => handleData("email", e.target.value)}
-              />
-            </div>
+          <p className="text-sm text-zinc-500 mt-1.5">
+            Enter your registered email to receive a reset link.
+          </p>
+        </div>
 
-            <button
-              className="w-full p-3.5  bg-accent text-white text-lg rounded-lg cursor-pointer"
-              onClick={handleSubmit}
-              disabled={isLoading}
-            >
-              Send Reset Link
-            </button>
+        <div className="w-full flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5 w-full">
+            <label htmlFor="email" className="px-1 text-xs text-zinc-400 font-medium">
+              Registered email
+            </label>
+            <input
+              className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
+              type="email"
+              name="email"
+              id="email"
+              placeholder="johndoe@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3.5 bg-zinc-100 text-zinc-950 text-sm font-medium rounded-full cursor-pointer hover:bg-white transition-colors disabled:opacity-60"
+            disabled={isLoading}
+          >
+            {isLoading ? "Sending..." : "Send Reset Link"}
+          </button>
+
+          {devResetUrl && (
+            <div className="p-4 rounded-xl bg-surface-elevated border border-white/[0.06] text-sm text-zinc-400">
+              <p className="mb-1.5 font-medium text-zinc-200">Direct reset link:</p>
+              <Link href={devResetUrl} className="text-zinc-100 underline break-all">
+                {devResetUrl}
+              </Link>
+            </div>
+          )}
+
+          <div className="text-zinc-500 text-sm">
+            <Link href="/" className="text-zinc-200 hover:underline font-medium">
+              Back to Login
+            </Link>
           </div>
         </div>
-      </div>
-    </main>
+      </form>
+    </AuthLayout>
   );
 }

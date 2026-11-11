@@ -9,19 +9,38 @@ export default function Dropdown({
   onChange,
   placeholder = "Select",
   classname = "",
+  triggerClass = "",
+  menuClass = "",
+  icon = null,
+  ariaLabel,
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef();
 
   useEffect(() => {
-    function handleclickOutside(e) {
+    function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) {
         setOpen(false);
       }
     }
-    document.addEventListener("click", handleclickOutside);
-    return () => document.removeEventListener("click", handleclickOutside);
+    function handleKeyDown(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
+
+  const selectedOption =
+    typeof value === "string"
+      ? options.find((opt) => opt.key === value || opt.name === value) ||
+        (value ? { key: value, name: value } : null)
+      : value?.name
+      ? value
+      : options.find((opt) => opt.key === value?.key) || null;
 
   function handleSelect(option) {
     setOpen(false);
@@ -29,37 +48,59 @@ export default function Dropdown({
   }
 
   return (
-    <div ref={ref} className={`relative min-w-sm w-full  ${classname}`}>
-      {/* Trigger */}
+    <div ref={ref} className={`relative w-full ${classname}`}>
       <button
-        className={`${open ? "bg-slate-100 " : "bg-app-bg "}
-          min-w-sm w-full  py-3.5 gap-2 rounded-lg flex items-center justify-between px-6 cursor-pointer`}
+        type="button"
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        className={
+          triggerClass ||
+          `${
+            open ? "bg-surface-hover border-white/[0.12]" : "bg-surface-elevated border-white/[0.06]"
+          } w-full py-2.5 px-4 gap-2 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 hover:bg-surface-hover`
+        }
         onClick={() => setOpen((pre) => !pre)}
       >
-        <span
-          className={`${
-            value?.name ? "text-amount-primary " : "text-sec-96 "
-          } `}
-        >
-          {value?.name || placeholder}
-        </span>
-        <BiChevronDown size={18} stroke="1" className="text-gray-46" />
+        <div className="flex items-center gap-2 overflow-hidden">
+          {icon && <div className="flex-shrink-0 flex items-center">{icon}</div>}
+          <span
+            className={`truncate text-sm ${
+              selectedOption?.name ? "text-zinc-100 font-medium" : "text-zinc-500"
+            }`}
+          >
+            {selectedOption?.name || placeholder}
+          </span>
+        </div>
+        <BiChevronDown
+          size={18}
+          className={`text-zinc-500 flex-shrink-0 transition-transform duration-200 ${
+            open ? "rotate-180 text-zinc-300" : ""
+          }`}
+        />
       </button>
 
-      {/* DropdownItems */}
       {open && options && (
-        <div className="absolute  p-3 bg-white w-[99%] left-[50%] top-[110%] translate-x-[-50%] flex flex-col gap-2 rounded-lg shadow-dropdown-sm z-50">
+        <div
+          className={`absolute p-1.5 bg-surface-elevated border border-white/[0.08] w-full min-w-[160px] left-0 top-[calc(100%+6px)] flex flex-col gap-0.5 rounded-xl shadow-dropdown-sm z-50 max-h-60 overflow-y-auto scrollbar-minimal animate-modal-in ${menuClass}`}
+        >
           {options.map((item, i) => {
+            const isSelected =
+              selectedOption &&
+              item.key === selectedOption.key &&
+              item.name === selectedOption.name;
             return (
-              <div
-                key={item.key + i}
+              <button
+                type="button"
+                key={(item.key ?? item.name) + i}
                 onClick={() => handleSelect(item)}
                 className={`${
-                  item.key == value?.key ? "bg-gray-100" : ""
-                } text-gray-4c p-2 px-3 rounded-md transition-colors duration-300 ease-in-out hover:bg-gray-100 cursor-pointer`}
+                  isSelected
+                    ? "bg-white/[0.1] text-zinc-100 font-medium"
+                    : "text-zinc-400"
+                } text-left text-sm px-3 py-2 rounded-lg transition-colors hover:bg-white/[0.05] hover:text-zinc-100 cursor-pointer`}
               >
                 {item.name}
-              </div>
+              </button>
             );
           })}
         </div>

@@ -20,107 +20,104 @@ const IconPicker = memo(function IconPicker({ selected, onSelect }) {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [isLoading, startTransition] = useTransition();
-  const [value, setValue] = useState(null);
+  const [value, setValue] = useState(selected || null);
 
   const iconsRef = useRef();
 
-  const handleOverlayToggle = () => {
-    setOpen((p) => !p);
-  };
-
   const handleSelectValue = (icon) => {
     setValue(icon);
-    console.log(icon);
-    onSelect && onSelect(icon);
+    onSelect && onSelect({ name: icon.name });
     setOpen(false);
   };
 
   const icons = useMemo(() => {
-    if (!query) return ALL_ICONS;
+    if (!query) return ALL_ICONS.slice(0, 120);
     return ALL_ICONS.filter(({ name }) =>
       name.toLowerCase().includes(query.toLowerCase())
-    );
+    ).slice(0, 120);
   }, [query]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (iconsRef.current && !iconsRef?.current?.contains(e.target)) {
+      if (iconsRef.current && !iconsRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
     if (open) {
       document.addEventListener("mousedown", handleOutsideClick);
-    } else {
-      document.removeEventListener("mousedown", handleOutsideClick);
     }
-
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [open]);
 
+  const SelectedIcon =
+    value?.Icon ||
+    (value?.name ? FcIcons[value.name] || BiIcons[value.name] : null);
+
   return (
     <div className="relative w-fit" ref={iconsRef}>
-      {/* Trigger */}
       <button
-        className="p-1.5 bg-gray-100  rounded-md cursor-pointer shadow-sm"
-        onClick={handleOverlayToggle}
+        type="button"
+        className="p-2.5 px-3.5 bg-surface-elevated hover:bg-surface-hover border border-white/[0.06] rounded-xl cursor-pointer transition-colors flex items-center gap-2 text-sm text-zinc-300"
+        onClick={() => setOpen((p) => !p)}
       >
-        {value ? (
-          <value.Icon size={26} className="text-gray-700" />
+        {SelectedIcon ? (
+          <SelectedIcon size={20} className="text-zinc-100" />
         ) : (
-          <BiIcons.BiSmile size={24} className="text-gray-400" />
+          <BiIcons.BiSmile size={20} className="text-zinc-500" />
         )}
+        <span>{value?.name ? "Change icon" : "Pick icon"}</span>
       </button>
 
-      <div
-        ref={iconsRef}
-        className={
-          "absolute bg-gray-100 rounded-md p-3 z-40 shadow-dropdown-sm border border-zinc-200 top-[120%] left-0 w-[20rem] h-[19rem] transition-all duration-200 ease-in-out" +
-          ` ${open ? "opacity-100 " : "opacity-0 pointer-events-none"}`
-        }
-      >
-        <div className="flex flex-col gap-4 h-full overflow-hidden">
-          <div className="flex items-center gap-2">
-            <input
-              onInput={(e) => {
-                const val = e.target.value;
-                setSearch(val);
-                startTransition(() => {
-                  setQuery(val);
-                });
-              }}
-              value={search}
-              type="text"
-              className="bg-gray-200/70 text-zinc-600  grow text-sm p-2 px-3 rounded-md focus:outline-none"
-            />
-            <button
-              className="bg-gray-200 text-zinc-600 p-2 rounded-md cursor-pointer"
-              onClick={() => setValue(null)}
-            >
-              <BiIcons.BiTrash size={18} />
-            </button>
+      {open && (
+        <div className="absolute bg-surface-elevated rounded-2xl p-3 z-40 shadow-dropdown-sm border border-white/[0.08] top-[115%] left-0 w-72 h-72">
+          <div className="flex flex-col gap-3 h-full overflow-hidden">
+            <div className="flex items-center gap-2">
+              <input
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearch(val);
+                  startTransition(() => {
+                    setQuery(val);
+                  });
+                }}
+                value={search}
+                placeholder="Search icons..."
+                type="text"
+                className="bg-surface text-zinc-100 placeholder:text-zinc-600 grow text-sm p-2 px-3 rounded-lg border border-white/[0.06] focus:outline-none"
+              />
+              <button
+                type="button"
+                className="bg-surface hover:bg-white/[0.08] text-zinc-400 p-2 rounded-lg cursor-pointer"
+                onClick={() => {
+                  setValue(null);
+                  onSelect && onSelect(null);
+                }}
+                title="Clear icon"
+              >
+                <BiIcons.BiTrash size={16} />
+              </button>
+            </div>
+            {isLoading ? (
+              <div className="grow flex items-center justify-center text-sm text-zinc-500">
+                Loading...
+              </div>
+            ) : (
+              <div className="grid grid-cols-6 gap-1.5 overflow-auto no-scrollbar">
+                {icons.map((icon, i) => (
+                  <button
+                    type="button"
+                    key={icon.name + i}
+                    className="text-zinc-300 w-full h-fit flex justify-center p-2 rounded-lg transition-colors hover:bg-white/[0.08] cursor-pointer"
+                    onClick={() => handleSelectValue(icon)}
+                  >
+                    <icon.Icon size={22} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          {isLoading ? (
-            <div className="grow flex items-center justify-center">
-              Loading...
-            </div>
-          ) : (
-            <div className="grid grid-cols-6 gap-2 overflow-auto no-scrollbar">
-              {icons &&
-                icons?.map((icon, i) => {
-                  return (
-                    <div
-                      key={icon.name + i}
-                      className="text-zinc-600 w-full h-fit flex justify-center p-2 rounded-lg transition-colors duration-300 ease-in-out hover:bg-zinc-200/70 cursor-pointer"
-                      onClick={() => handleSelectValue(icon)}
-                    >
-                      <icon.Icon size={26} />
-                    </div>
-                  );
-                })}
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 });

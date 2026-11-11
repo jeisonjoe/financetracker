@@ -1,134 +1,139 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { validateEmail } from "../utils/util";
-import { supabase } from "../supabase/supabase-client";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function SignupForm() {
-  const [data, setData] = useState({});
+  const [data, setData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
-
+  const { signup } = useAuth();
   const router = useRouter();
 
   const handleData = (key, value) => {
     setData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const { firstName, lastName, email, password } = data;
-    if (!firstName || !lastName || !password) {
-      toast.error("Please fill in with the required details");
+    if (!firstName.trim() || !lastName.trim() || !password) {
+      toast.error("Please fill in all required details");
       return;
     }
-    if (email) {
-      if (!validateEmail(email)) {
-        console.error("Enter a valid email");
-        return;
-      }
+    if (!validateEmail(email)) {
+      toast.error("Please enter a valid email address");
+      return;
     }
 
     setIsLoading(true);
-
-    const { data: userData, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) {
-      toast.error(error.message);
-      setIsLoading(false);
-      return;
-    }
-    if (userData.session) {
-      toast.success("Account created successfully!");
+    try {
+      await signup({ firstName, lastName, email, password });
+      toast.success("Account created successfully");
       router.push("/dashboard");
+    } catch (error) {
+      toast.error(error.message || "Failed to create account");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
-    <div className="flex flex-col gap-18 items-start h-full justify-center">
-      <h2 className="text-accent text-4xl font-semibold px-1">
-        Create your account!
-      </h2>
-      <div className="w-full flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col gap-2 w-lg">
-            <label htmlFor="firstName" className="px-2 text-sm text-zinc-400 ">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-9 items-start w-full">
+      <div>
+        <h2 className="text-zinc-100 text-3xl sm:text-4xl font-light">
+          Create your account
+        </h2>
+        <p className="text-sm text-zinc-500 mt-1.5">
+          Start tracking your streams and monthly pace.
+        </p>
+      </div>
+
+      <div className="w-full flex flex-col gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="firstName" className="px-1 text-xs text-zinc-400 font-medium">
               First Name
             </label>
             <input
-              className=" border-1 bg-white border-zinc-100 text-zinc-800 rounded-lg p-4 py-3.5 text-base focus:outline-none"
+              className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
               type="text"
               name="firstName"
               id="firstName"
-              placeholder="John"
-              value={data?.firstName || ""}
-              autoComplete="off"
-              autoCorrect="off"
-              onInput={(e) => handleData("firstName", e.target.value)}
+              placeholder="Jeison"
+              value={data.firstName}
+              onChange={(e) => handleData("firstName", e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-2 w-lg">
-            <label htmlFor="lastName" className="px-2 text-sm text-zinc-400 ">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="lastName" className="px-1 text-xs text-zinc-400 font-medium">
               Last Name
             </label>
             <input
-              className=" border-1 bg-white border-zinc-100 text-zinc-800 rounded-lg p-4 py-3.5 text-base focus:outline-none"
+              className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
               type="text"
               name="lastName"
               id="lastName"
-              placeholder="Doe"
-              autoComplete="off"
-              value={data.lastName || ""}
-              onInput={(e) => handleData("lastName", e.target.value)}
+              placeholder="Joe"
+              value={data.lastName}
+              onChange={(e) => handleData("lastName", e.target.value)}
             />
           </div>
         </div>
-        <div className="flex flex-col gap-2 w-full">
-          <label htmlFor="lastName" className="px-2 text-sm text-zinc-400 ">
+
+        <div className="flex flex-col gap-1.5 w-full">
+          <label htmlFor="email" className="px-1 text-xs text-zinc-400 font-medium">
             Email
           </label>
           <input
-            className=" border-1 bg-white border-zinc-100 text-zinc-800 rounded-lg p-4 py-3.5 text-base focus:outline-none"
-            type="text"
+            className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
+            type="email"
             name="email"
             id="email"
             placeholder="johndoe@gmail.com"
-            autoComplete="off"
-            onInput={(e) => handleData("email", e.target.value)}
+            value={data.email}
+            onChange={(e) => handleData("email", e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-2 w-full">
-          <label htmlFor="lastName" className="px-2 text-sm text-zinc-400 ">
+
+        <div className="flex flex-col gap-1.5 w-full">
+          <label htmlFor="password" className="px-1 text-xs text-zinc-400 font-medium">
             Password
           </label>
           <input
-            className=" border-1 bg-white border-zinc-100 text-zinc-800 rounded-lg p-4 py-3.5 text-base focus:outline-none"
+            className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
             type="password"
             name="password"
             id="password"
-            placeholder="password"
-            onInput={(e) => handleData("password", e.target.value)}
+            placeholder="Minimum 6 characters"
+            value={data.password}
+            onChange={(e) => handleData("password", e.target.value)}
           />
         </div>
+
         <button
-          className="w-full p-3.5  bg-accent text-white text-lg rounded-lg cursor-pointer"
-          onClick={handleSubmit}
+          type="submit"
+          className="w-full py-3.5 bg-zinc-100 text-zinc-950 text-sm font-medium rounded-full cursor-pointer hover:bg-white transition-colors disabled:opacity-60"
           disabled={isLoading}
         >
-          Create
+          {isLoading ? "Creating account..." : "Create Account"}
         </button>
-        <div className="text-zinc-500 text-lg flex items-center gap-2">
-          Already have an account?{" "}
-          <Link href={"/"} className="underline text-accent">
+
+        <div className="text-zinc-500 text-sm flex items-center gap-2">
+          <span>Already have an account?</span>
+          <Link href="/" className="text-zinc-200 hover:underline font-medium">
             Login
           </Link>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
