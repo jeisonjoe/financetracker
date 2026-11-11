@@ -8,6 +8,7 @@ import {
   usePlanningMutations,
 } from "@/app/hooks/useFinanceData";
 import AnimatedNumber from "@/app/components/AnimatedNumber";
+import Slider from "@/app/components/Slider";
 
 const SPLIT_PRESETS = [
   { label: "50 / 30 / 20", needs: 50, wants: 30, savings: 20 },
@@ -323,31 +324,34 @@ export default function CashflowSection({
           </div>
 
           {/* Sliders for Needs / Wants / Savings */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {[
               {
                 key: "needs_percent",
                 label: "Needs",
                 val: needsVal,
                 dot: "bg-zinc-300",
-                accent: "accent-zinc-200",
+                fill: "bg-zinc-300",
+                thumb: "bg-zinc-100",
               },
               {
                 key: "wants_percent",
                 label: "Wants",
                 val: wantsVal,
                 dot: "bg-accent",
-                accent: "accent-[#e16449]",
+                fill: "bg-accent",
+                thumb: "bg-accent",
               },
               {
                 key: "savings_percent",
                 label: "Savings",
                 val: savingsVal,
                 dot: "bg-green-100",
-                accent: "accent-emerald-400",
+                fill: "bg-green-100",
+                thumb: "bg-green-100",
               },
             ].map((slider) => (
-              <div key={slider.key} className="flex flex-col gap-1">
+              <div key={slider.key} className="flex flex-col gap-0.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-2 text-zinc-300">
                     <span className={`w-2 h-2 rounded-full ${slider.dot}`} />
@@ -363,18 +367,20 @@ export default function CashflowSection({
                       : ""}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
+                <Slider
+                  ariaLabel={`${slider.label} allocation percentage`}
+                  min={0}
+                  max={100}
+                  step={1}
                   value={slider.val}
-                  onChange={(e) =>
+                  fillClassName={slider.fill}
+                  thumbClassName={slider.thumb}
+                  onChange={(nextVal) =>
                     setForm((prev) => ({
                       ...prev,
-                      [slider.key]: e.target.value,
+                      [slider.key]: String(nextVal),
                     }))
                   }
-                  className={`w-full cursor-pointer ${slider.accent}`}
                 />
               </div>
             ))}
