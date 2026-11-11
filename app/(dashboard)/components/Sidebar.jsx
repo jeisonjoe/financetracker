@@ -12,9 +12,9 @@ import ActionModal from "@/app/components/ActionModal";
 const ROUTE_HEADLINES = {
   "/dashboard": "Let’s look at today’s expenses.",
   "/dashboard/transactions": "Every transaction, clearly organized.",
-  "/dashboard/wallets": "Manage your accounts and streams.",
-  "/dashboard/categories": "See where your money goes.",
-  "/dashboard/budgets": "Keep pace with your monthly limits.",
+  "/dashboard/wallets": "Manage your wallets and balances.",
+  "/dashboard/categories": "Organize icons, types, and categories.",
+  "/dashboard/budgets": "Set monthly limits and track spending.",
   "/dashboard/planning": "Organize, plan, and grow your funds.",
   "/dashboard/preferences": "Personalize your workspace.",
   "/help": "Guides and quick tips.",
@@ -45,7 +45,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
           <Link
             href="/dashboard"
             onClick={onCloseMobile}
-            className="flex items-center gap-3 text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="flex items-center gap-3 text-ink-muted hover:text-ink-secondary transition-colors"
           >
             <RiMenu2Line size={17} />
             <span className="text-sm font-normal">Expense Tracker</span>
@@ -55,7 +55,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
             <button
               type="button"
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 cursor-pointer"
+              className="lg:hidden p-1.5 rounded-lg text-ink-muted hover:text-ink-primary cursor-pointer"
               aria-label="Close navigation"
             >
               <BiX size={20} />
@@ -65,10 +65,10 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
 
         {/* Editorial Greeting */}
         <div className="flex flex-col gap-2.5 pr-2">
-          <span className="text-xs text-zinc-500 font-normal">
+          <span className="text-xs text-ink-subtle font-normal">
             Hi, {displayName}
           </span>
-          <h1 className="text-2xl font-light text-zinc-400 leading-snug">
+          <h1 className="text-2xl font-light text-ink-muted leading-snug">
             {headline}
           </h1>
         </div>
@@ -84,8 +84,8 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
                 onClick={onCloseMobile}
                 className={`px-3.5 py-2 rounded-xl text-sm transition-colors duration-200 ${
                   active
-                    ? "bg-nav-active text-zinc-100 font-medium"
-                    : "text-zinc-500 hover:bg-nav-hover hover:text-zinc-200"
+                    ? "bg-nav-active text-ink-primary font-medium"
+                    : "text-ink-subtle hover:bg-nav-hover hover:text-ink-secondary"
                 }`}
               >
                 {item.name}
@@ -106,8 +106,8 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
               onClick={onCloseMobile}
               className={`px-3 py-2 rounded-xl text-sm flex gap-3 items-center transition-colors duration-200 ${
                 active
-                  ? "bg-nav-active text-zinc-100 font-medium"
-                  : "text-zinc-500 hover:text-zinc-200 hover:bg-nav-hover"
+                  ? "bg-nav-active text-ink-primary font-medium"
+                  : "text-ink-subtle hover:text-ink-secondary hover:bg-nav-hover"
               }`}
             >
               <item.icon size={16} />
@@ -118,7 +118,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
 
         <button
           type="button"
-          className="px-3 py-2 rounded-xl text-sm flex gap-3 items-center text-zinc-500 hover:text-red-100 hover:bg-nav-hover cursor-pointer transition-colors duration-200 text-left"
+          className="px-3 py-2 rounded-xl text-sm flex gap-3 items-center text-ink-subtle hover:text-red-100 hover:bg-nav-hover cursor-pointer transition-colors duration-200 text-left"
           onClick={() => setShowLogout(true)}
         >
           <BiLogOut size={16} />
@@ -136,11 +136,11 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }) {
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-backdrop backdrop-blur-xs lg:hidden"
           onClick={onCloseMobile}
         >
           <aside
-            className="w-72 max-w-[85vw] bg-app-bg h-full border-r border-white/[0.06]"
+            className="w-72 max-w-[85vw] bg-app-bg h-full border-r border-line-subtle"
             onClick={(e) => e.stopPropagation()}
           >
             {navContent}

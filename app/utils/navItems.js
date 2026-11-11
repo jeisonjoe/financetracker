@@ -18,12 +18,12 @@ export const nav = [
     url: "/dashboard/wallets",
   },
   {
-    name: "Categories",
-    url: "/dashboard/categories",
-  },
-  {
     name: "Budgets",
     url: "/dashboard/budgets",
+  },
+  {
+    name: "Categories",
+    url: "/dashboard/categories",
   },
   {
     name: "Planning",

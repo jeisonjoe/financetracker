@@ -16,9 +16,9 @@ export default function BudgetWidget({ limit = 6 }) {
   const categories = (data?.categoryBreakdown || []).slice(0, limit);
 
   return (
-    <div className="flex flex-col gap-4 bg-surface-elevated/50 rounded-2xl border border-white/[0.06] p-5 h-full min-h-[380px]">
+    <div className="flex flex-col gap-4 bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 h-full min-h-[380px]">
       <div className="flex justify-between items-center gap-2">
-        <span className="text-lg text-zinc-200 font-normal">
+        <span className="text-lg text-ink-secondary font-normal">
           Spending Analysis
         </span>
         <PeriodSelector value={period} onChange={setPeriod} />
@@ -35,7 +35,7 @@ export default function BudgetWidget({ limit = 6 }) {
             ))}
           </div>
         ) : categories.length === 0 ? (
-          <div className="text-center text-zinc-500 text-sm py-16">
+          <div className="text-center text-ink-subtle text-sm py-16">
             No expenses in this period
           </div>
         ) : (
@@ -46,28 +46,28 @@ export default function BudgetWidget({ limit = 6 }) {
               ? "bg-red-100"
               : item.sharePercent > 50
               ? "bg-accent"
-              : "bg-zinc-400";
+              : "bg-ink-muted";
 
             return (
               <div
                 key={item.id || item.name}
-                className="flex flex-col gap-2.5 py-4 border-b border-white/[0.05] w-full last-of-type:border-b-0"
+                className="flex flex-col gap-2.5 py-4 border-b border-line-faint w-full last-of-type:border-b-0"
               >
                 <div className="flex justify-between items-center w-full gap-3">
                   <div className="flex gap-3 items-center min-w-0">
-                    <div className="w-9 h-9 bg-white/[0.06] rounded-full text-zinc-300 flex items-center justify-center shrink-0">
-                      <RenderIcon icon={item.icon} props={{ className: "text-lg" }} />
+                    <div className="w-9 h-9 bg-tint rounded-full text-ink-body flex items-center justify-center shrink-0">
+                      <RenderIcon icon={item.icon} name={item.name} props={{ className: "text-lg" }} />
                     </div>
-                    <span className="text-sm sm:text-base font-normal text-zinc-200 truncate">
+                    <span className="text-sm sm:text-base font-normal text-ink-secondary truncate">
                       {item.name}
                     </span>
                   </div>
-                  <div className="flex items-baseline gap-1 text-zinc-200 font-medium shrink-0">
+                  <div className="flex items-baseline gap-1 text-ink-secondary font-medium shrink-0 tabular-nums">
                     <span className="text-base">
                       {cFormat(item.spent, { currency })}
                     </span>
                     {hasBudget && (
-                      <span className="text-xs text-zinc-500 font-normal">
+                      <span className="text-xs text-ink-subtle font-normal">
                         / {cFormat(item.budget, { currency })}
                       </span>
                     )}
@@ -75,7 +75,7 @@ export default function BudgetWidget({ limit = 6 }) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-xs text-zinc-500">
+                  <div className="flex justify-between text-xs text-ink-subtle">
                     <span>
                       {hasBudget
                         ? `${item.budgetPercent}% of budget`
@@ -85,7 +85,7 @@ export default function BudgetWidget({ limit = 6 }) {
                       <span className="text-red-100 font-medium">Over budget</span>
                     )}
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-tint overflow-hidden">
                     <div
                       style={{ width: `${Math.min(100, barWidth)}%` }}
                       className={`h-full rounded-full transition-all duration-500 ease-out ${barColor}`}

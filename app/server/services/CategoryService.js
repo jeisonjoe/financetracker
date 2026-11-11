@@ -1,16 +1,16 @@
 import { ValidationError } from "../domain/errors.js";
 
 const DEFAULT_CATEGORIES = [
-  { name: "Food & Dining", type: "expense" },
-  { name: "Shopping", type: "expense" },
-  { name: "Travel", type: "expense" },
-  { name: "Bills & Utilities", type: "expense" },
-  { name: "Groceries", type: "expense" },
-  { name: "Entertainment", type: "expense" },
-  { name: "Health", type: "expense" },
-  { name: "Investment", type: "expense" },
-  { name: "Transfer", type: "both" },
-  { name: "Salary", type: "income" },
+  { name: "Food & Dining", type: "expense", icon: { name: "BiRestaurant" } },
+  { name: "Shopping", type: "expense", icon: { name: "BiShoppingBag" } },
+  { name: "Travel", type: "expense", icon: { name: "BiCar" } },
+  { name: "Bills & Utilities", type: "expense", icon: { name: "BiReceipt" } },
+  { name: "Groceries", type: "expense", icon: { name: "BiCart" } },
+  { name: "Entertainment", type: "expense", icon: { name: "BiMoviePlay" } },
+  { name: "Health", type: "expense", icon: { name: "BiPlusMedical" } },
+  { name: "Investment", type: "expense", icon: { name: "BiTrendingUp" } },
+  { name: "Transfer", type: "both", icon: { name: "BiTransfer" } },
+  { name: "Salary", type: "income", icon: { name: "BiWallet" } },
 ];
 
 /**
