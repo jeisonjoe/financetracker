@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# FinTrack
+
+Personal finance tracker built with Next.js App Router, React Query, Tailwind CSS, and an OOP layered backend supporting runtime switching between **MySQL** and **Supabase**.
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies with `pnpm`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run the development server:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+## Switching Between MySQL and Supabase
 
-To learn more about Next.js, take a look at the following resources:
+1. Copy variables from `.env.example` into `.env.local`.
+2. For **MySQL**:
+   - Import `database/mysql/schema.sql` into your MySQL 8.0+ instance.
+   - Set `DB_PROVIDER="mysql"` and configure `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`, and `AUTH_JWT_SECRET`.
+3. For **Supabase**:
+   - Set `DB_PROVIDER="supabase"` and provide `NEXT_PUBLIC_SUPABASE_PROJECT_URL` and `NEXT_PUBLIC_SUPABASE_API_KEY`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `pnpm dev` — Start development server
+- `pnpm build` — Build production bundle
+- `pnpm start` — Start production server
+- `pnpm test` — Run backend unit tests

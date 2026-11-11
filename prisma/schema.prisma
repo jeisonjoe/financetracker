@@ -16,3 +16,65 @@ model transactions {
   transaction Json?
   user_id     String?  @db.Uuid
 }
+
+model categories {
+  id          BigInt   @id @default(autoincrement())
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  name        String   
+  type        String?
+  user_id     String?  @db.Uuid
+}
+
+model wallets {
+  id              BigInt   @id @default(autoincrement())
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  name            String
+  type            String?
+  opening_balance BigInt   @default(0)
+  user_id         String?  @db.Uuid
+}
+
+model fund_goals {
+  id                   BigInt   @id @default(autoincrement())
+  user_id              String   @db.Uuid
+  name                 String
+  target_amount        BigInt   @default(0)
+  current_amount       BigInt   @default(0)
+  monthly_contribution BigInt   @default(0)
+  target_date          String?
+  category             String   @default("general")
+  priority             String   @default("medium")
+  status               String   @default("active")
+  notes                String?
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model recurring_items {
+  id            BigInt   @id @default(autoincrement())
+  user_id       String   @db.Uuid
+  title         String
+  type          String   @default("expense")
+  amount        BigInt   @default(0)
+  frequency     String   @default("monthly")
+  next_due_date String
+  category      String   @default("Bills & Utilities")
+  wallet        String   @default("Cash")
+  is_active     Boolean  @default(true)
+  auto_reserve  Boolean  @default(true)
+  notes         String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model fund_plans {
+  id                    BigInt   @id @default(autoincrement())
+  user_id               String   @unique @db.Uuid
+  monthly_income_target BigInt   @default(0)
+  needs_percent         Int      @default(50)
+  wants_percent         Int      @default(30)
+  savings_percent       Int      @default(20)
+  reserve_buffer        BigInt   @default(0)
+  category_buckets      Json?
+  updated_at            DateTime @default(now()) @db.Timestamptz(6)
+}
