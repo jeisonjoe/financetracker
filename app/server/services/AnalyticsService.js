@@ -96,12 +96,13 @@ export class AnalyticsService {
     const previousSummary = this.summarizeTotals(previousTransactions);
     const allTimeSummary = this.summarizeTotals(allTransactions);
 
-    // Monthly spending pace calculation
+    // Monthly spending pace & burn rate calculation
     const now = new Date();
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysElapsed = Math.max(1, now.getDate());
     const daysRemaining = Math.max(1, lastDayOfMonth - now.getDate() + 1);
     const configuredBudgetTotal = registeredCategories
-      .filter((c) => c.type !== "income")
+      .filter((c) => c.type !== "income" && c.name?.trim().toLowerCase() !== "transfer")
       .reduce((sum, c) => sum + (Number(c.monthlyBudget) || 0), 0);
     const spendingCap =
       configuredBudgetTotal > 0 ? configuredBudgetTotal : currentSummary.income;
@@ -116,6 +117,42 @@ export class AnalyticsService {
         : currentSummary.expense > 0
         ? 100
         : 0;
+    const avgDailySpend = Math.round((currentSummary.expense / daysElapsed) * 100) / 100;
+    const projectedMonthSpend = Math.round(avgDailySpend * lastDayOfMonth);
+    const savingsRate =
+      currentSummary.income > 0
+        ? Math.round(((currentSummary.income - currentSummary.expense) / currentSummary.income) * 100)
+        : 0;
+
+    // 14-day daily cashflow trend anchored to the end of the selected period (or today)
+    const trendEndDate =
+      period === "last_month" && end
+        ? new Date(end.getFullYear(), end.getMonth(), end.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dailyMap = new Map();
+    const trendKeys = [];
+    for (let i = 13; i >= 0; i -= 1) {
+      const d = new Date(trendEndDate);
+      d.setDate(trendEndDate.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      trendKeys.push(key);
+      dailyMap.set(key, { date: key, label, income: 0, expense: 0 });
+    }
+    for (const tx of periodTransactions) {
+      if (tx.type === "transfer") continue;
+      const d = new Date(tx.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+      const bucket = dailyMap.get(key);
+      if (!bucket) continue;
+      if (tx.type === "income") bucket.income += tx.amount;
+      else bucket.expense += tx.amount;
+    }
+    const dailyTrend = trendKeys.map((k) => dailyMap.get(k));
 
     // Wallet analytics: opening balance + all-time flows + selected period earned/spent/transfers
     const walletMap = new Map();
@@ -216,6 +253,7 @@ export class AnalyticsService {
       period,
       summary: {
         ...currentSummary,
+        savingsRate,
         availableBalance,
         openingBalanceTotal: totalOpeningBalance,
         deltas: {
@@ -229,10 +267,14 @@ export class AnalyticsService {
         hasConfiguredBudgets: configuredBudgetTotal > 0,
         spent: currentSummary.expense,
         remaining: remainingBudget,
+        daysElapsed,
         daysRemaining,
         dailyAllowance,
+        avgDailySpend,
+        projectedMonthSpend,
         utilizationPercent,
       },
+      dailyTrend,
       wallets,
       categoryBreakdown,
     };

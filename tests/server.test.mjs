@@ -177,8 +177,10 @@ test("AnalyticsService computes summary, wallet balances, and category budgets",
   assert.equal(overview.summary.balance, 7000);
   assert.equal(overview.summary.availableBalance, 5500);
   assert.equal(overview.summary.deltas.expense, 100);
+  assert.equal(overview.summary.savingsRate, 70);
   assert.equal(overview.spendingPace.spendingCap, 2500);
   assert.equal(overview.spendingPace.utilizationPercent, 100);
+  assert.equal(overview.dailyTrend.length, 14);
 
   const hdfc = overview.wallets.find((w) => w.name === "HDFC Debit Card");
   assert.equal(hdfc.balance, 7000);
