@@ -57,19 +57,19 @@ const IconPicker = memo(function IconPicker({ selected, onSelect }) {
     <div className="relative w-fit" ref={iconsRef}>
       <button
         type="button"
-        className="p-2.5 px-3.5 bg-surface-elevated hover:bg-surface-hover border border-white/[0.06] rounded-xl cursor-pointer transition-colors flex items-center gap-2 text-sm text-zinc-300"
+        className="p-2.5 px-3.5 bg-surface-elevated hover:bg-surface-hover border border-line-subtle rounded-xl cursor-pointer transition-colors flex items-center gap-2 text-sm text-ink-body"
         onClick={() => setOpen((p) => !p)}
       >
         {SelectedIcon ? (
-          <SelectedIcon size={20} className="text-zinc-100" />
+          <SelectedIcon size={20} className="text-ink-primary" />
         ) : (
-          <BiIcons.BiSmile size={20} className="text-zinc-500" />
+          <BiIcons.BiSmile size={20} className="text-ink-subtle" />
         )}
         <span>{value?.name ? "Change icon" : "Pick icon"}</span>
       </button>
 
       {open && (
-        <div className="absolute bg-surface-elevated rounded-2xl p-3 z-40 shadow-dropdown-sm border border-white/[0.08] top-[115%] left-0 w-72 h-72">
+        <div className="absolute bg-surface-elevated rounded-2xl p-3 z-40 shadow-dropdown-sm border border-line top-[115%] left-0 w-72 h-72">
           <div className="flex flex-col gap-3 h-full overflow-hidden">
             <div className="flex items-center gap-2">
               <input
@@ -83,11 +83,11 @@ const IconPicker = memo(function IconPicker({ selected, onSelect }) {
                 value={search}
                 placeholder="Search icons..."
                 type="text"
-                className="bg-surface text-zinc-100 placeholder:text-zinc-600 grow text-sm p-2 px-3 rounded-lg border border-white/[0.06] focus:outline-none"
+                className="bg-surface text-ink-primary placeholder:text-ink-placeholder grow text-sm p-2 px-3 rounded-lg border border-line-subtle focus:outline-none"
               />
               <button
                 type="button"
-                className="bg-surface hover:bg-white/[0.08] text-zinc-400 p-2 rounded-lg cursor-pointer"
+                className="bg-surface hover:bg-tint-hover text-ink-muted p-2 rounded-lg cursor-pointer"
                 onClick={() => {
                   setValue(null);
                   onSelect && onSelect(null);
@@ -98,7 +98,7 @@ const IconPicker = memo(function IconPicker({ selected, onSelect }) {
               </button>
             </div>
             {isLoading ? (
-              <div className="grow flex items-center justify-center text-sm text-zinc-500">
+              <div className="grow flex items-center justify-center text-sm text-ink-subtle">
                 Loading...
               </div>
             ) : (
@@ -107,7 +107,7 @@ const IconPicker = memo(function IconPicker({ selected, onSelect }) {
                   <button
                     type="button"
                     key={icon.name + i}
-                    className="text-zinc-300 w-full h-fit flex justify-center p-2 rounded-lg transition-colors hover:bg-white/[0.08] cursor-pointer"
+                    className="text-ink-body w-full h-fit flex justify-center p-2 rounded-lg transition-colors hover:bg-tint-hover cursor-pointer"
                     onClick={() => handleSelectValue(icon)}
                   >
                     <icon.Icon size={22} />

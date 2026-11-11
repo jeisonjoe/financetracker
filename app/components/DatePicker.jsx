@@ -101,16 +101,16 @@ export default function DatePicker({
           triggerClass ||
           `${
             open
-              ? "bg-surface-hover border-white/[0.12]"
-              : "bg-surface-elevated border-white/[0.06]"
+              ? "bg-surface-hover border-line-strong"
+              : "bg-surface-elevated border-line-subtle"
           } w-full py-2.5 px-3.5 gap-2 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 hover:bg-surface-hover`
         }
       >
         <div className="flex items-center gap-2 min-w-0">
-          <BiCalendar size={16} className="text-zinc-500 shrink-0" />
+          <BiCalendar size={16} className="text-ink-subtle shrink-0" />
           <span
             className={`truncate text-sm tabular-nums ${
-              formattedLabel ? "text-zinc-100 font-medium" : "text-zinc-500"
+              formattedLabel ? "text-ink-primary font-medium" : "text-ink-subtle"
             }`}
           >
             {formattedLabel || placeholder}
@@ -122,7 +122,7 @@ export default function DatePicker({
             type="button"
             onClick={handleClear}
             aria-label="Clear date"
-            className="p-0.5 rounded-full text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.08] cursor-pointer transition-colors shrink-0"
+            className="p-0.5 rounded-full text-ink-subtle hover:text-ink-secondary hover:bg-tint-hover cursor-pointer transition-colors shrink-0"
           >
             <BiX size={15} />
           </button>
@@ -133,7 +133,7 @@ export default function DatePicker({
         <div
           className={`absolute top-[calc(100%+6px)] ${
             align === "left" ? "left-0" : "right-0"
-          } w-72 p-2 bg-surface-elevated rounded-2xl shadow-dropdown-sm border border-white/[0.08] z-50 animate-modal-in`}
+          } w-72 p-2 bg-surface-elevated rounded-2xl shadow-dropdown-sm border border-line z-50 animate-modal-in`}
         >
           <Calendar
             value={parsedDate ?? new Date()}

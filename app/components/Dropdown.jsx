@@ -56,7 +56,7 @@ export default function Dropdown({
         className={
           triggerClass ||
           `${
-            open ? "bg-surface-hover border-white/[0.12]" : "bg-surface-elevated border-white/[0.06]"
+            open ? "bg-surface-hover border-line-strong" : "bg-surface-elevated border-line-subtle"
           } w-full py-2.5 px-4 gap-2 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 hover:bg-surface-hover`
         }
         onClick={() => setOpen((pre) => !pre)}
@@ -65,7 +65,7 @@ export default function Dropdown({
           {icon && <div className="flex-shrink-0 flex items-center">{icon}</div>}
           <span
             className={`truncate text-sm ${
-              selectedOption?.name ? "text-zinc-100 font-medium" : "text-zinc-500"
+              selectedOption?.name ? "text-ink-primary font-medium" : "text-ink-subtle"
             }`}
           >
             {selectedOption?.name || placeholder}
@@ -73,15 +73,15 @@ export default function Dropdown({
         </div>
         <BiChevronDown
           size={18}
-          className={`text-zinc-500 flex-shrink-0 transition-transform duration-200 ${
-            open ? "rotate-180 text-zinc-300" : ""
+          className={`text-ink-subtle flex-shrink-0 transition-transform duration-200 ${
+            open ? "rotate-180 text-ink-body" : ""
           }`}
         />
       </button>
 
       {open && options && (
         <div
-          className={`absolute p-1.5 bg-surface-elevated border border-white/[0.08] w-full min-w-[160px] left-0 top-[calc(100%+6px)] flex flex-col gap-0.5 rounded-xl shadow-dropdown-sm z-50 max-h-60 overflow-y-auto scrollbar-minimal animate-modal-in ${menuClass}`}
+          className={`absolute p-1.5 bg-surface-elevated border border-line w-full min-w-[160px] left-0 top-[calc(100%+6px)] flex flex-col gap-0.5 rounded-xl shadow-dropdown-sm z-50 max-h-60 overflow-y-auto scrollbar-minimal animate-modal-in ${menuClass}`}
         >
           {options.map((item, i) => {
             const isSelected =
@@ -95,9 +95,9 @@ export default function Dropdown({
                 onClick={() => handleSelect(item)}
                 className={`${
                   isSelected
-                    ? "bg-white/[0.1] text-zinc-100 font-medium"
-                    : "text-zinc-400"
-                } text-left text-sm px-3 py-2 rounded-lg transition-colors hover:bg-white/[0.05] hover:text-zinc-100 cursor-pointer`}
+                    ? "bg-tint-active text-ink-primary font-medium"
+                    : "text-ink-muted"
+                } text-left text-sm px-3 py-2 rounded-lg transition-colors hover:bg-tint-subtle hover:text-ink-primary cursor-pointer`}
               >
                 {item.name}
               </button>

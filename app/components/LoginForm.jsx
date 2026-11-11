@@ -37,10 +37,10 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-9 items-start w-full">
       <div>
-        <h2 className="text-zinc-100 text-3xl sm:text-4xl font-light">
+        <h2 className="text-ink-primary text-3xl sm:text-4xl font-light">
           Welcome back
         </h2>
-        <p className="text-sm text-zinc-500 mt-1.5">
+        <p className="text-sm text-ink-subtle mt-1.5">
           Sign in to continue to your dashboard.
         </p>
       </div>
@@ -48,11 +48,11 @@ export default function LoginForm() {
       <div className="w-full flex flex-col gap-5">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 w-full">
-            <label htmlFor="email" className="px-1 text-xs text-zinc-400 font-medium">
+            <label htmlFor="email" className="px-1 text-xs text-ink-muted font-medium">
               Email
             </label>
             <input
-              className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
+              className="bg-surface-elevated border border-line-subtle text-ink-primary placeholder:text-ink-placeholder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-line-focus transition-colors"
               type="email"
               name="email"
               id="email"
@@ -63,11 +63,11 @@ export default function LoginForm() {
           </div>
 
           <div className="flex flex-col gap-1.5 w-full">
-            <label htmlFor="password" className="px-1 text-xs text-zinc-400 font-medium">
+            <label htmlFor="password" className="px-1 text-xs text-ink-muted font-medium">
               Password
             </label>
             <input
-              className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
+              className="bg-surface-elevated border border-line-subtle text-ink-primary placeholder:text-ink-placeholder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-line-focus transition-colors"
               type="password"
               name="password"
               id="password"
@@ -80,7 +80,7 @@ export default function LoginForm() {
           <div className="flex justify-end">
             <Link
               href="/forgot-password"
-              className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="text-xs text-ink-muted hover:text-ink-secondary transition-colors"
             >
               Forgot password?
             </Link>
@@ -89,15 +89,15 @@ export default function LoginForm() {
 
         <button
           type="submit"
-          className="w-full py-3.5 bg-zinc-100 text-zinc-950 text-sm font-medium rounded-full cursor-pointer hover:bg-white transition-colors disabled:opacity-60"
+          className="w-full py-3.5 bg-cta text-cta-ink text-sm font-medium rounded-full cursor-pointer hover:bg-cta-hover transition-colors disabled:opacity-60"
           disabled={isLoading}
         >
           {isLoading ? "Signing in..." : "Login"}
         </button>
 
-        <div className="text-zinc-500 text-sm flex items-center gap-2">
+        <div className="text-ink-subtle text-sm flex items-center gap-2">
           <span>Don&apos;t have an account?</span>
-          <Link href="/signup" className="text-zinc-200 hover:underline font-medium">
+          <Link href="/signup" className="text-ink-secondary hover:underline font-medium">
             Create an account
           </Link>
         </div>

@@ -7,7 +7,7 @@ export default function ProgressRing({
   percent = 0,
   size = 48,
   strokeWidth = 3.5,
-  colorClass = "text-zinc-200",
+  colorClass = "text-ink-secondary",
   label,
 }) {
   const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
@@ -28,7 +28,7 @@ export default function ProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-white/[0.08]"
+          className="text-tint-hover"
         />
         <circle
           cx={size / 2}
@@ -43,7 +43,7 @@ export default function ProgressRing({
           className={`${colorClass} transition-[stroke-dashoffset] duration-700 ease-out`}
         />
       </svg>
-      <span className="absolute text-[11px] font-medium text-zinc-200 tabular-nums">
+      <span className="absolute text-[11px] font-medium text-ink-secondary tabular-nums">
         {label ?? `${Math.round(clamped)}%`}
       </span>
     </div>

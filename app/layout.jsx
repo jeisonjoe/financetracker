@@ -39,11 +39,20 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${aeonik.variable} ${inter.variable} ${aeonik.className} antialiased bg-app-bg text-zinc-100`}
+        className={`${aeonik.variable} ${inter.variable} ${aeonik.className} antialiased bg-app-bg text-ink-primary`}
       >
         <QueryClientProvider client={queryClient}>
           <AuthContextProvider>
-            <Toaster theme="dark" position="top-center" />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: {
+                  background: "var(--theme-surface-elevated)",
+                  color: "var(--theme-ink-primary)",
+                  border: "1px solid var(--theme-border-default)",
+                },
+              }}
+            />
             {children}
           </AuthContextProvider>
         </QueryClientProvider>

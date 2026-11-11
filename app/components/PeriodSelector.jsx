@@ -19,7 +19,7 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
         options={PERIOD_OPTIONS}
         value={selected}
         onChange={(opt) => onChange && onChange(opt.key)}
-        triggerClass="w-full flex items-center justify-between gap-2 text-zinc-300 bg-surface-elevated border border-white/[0.06] px-3.5 py-2 rounded-full text-xs sm:text-sm font-normal hover:bg-surface-hover transition-colors cursor-pointer"
+        triggerClass="w-full flex items-center justify-between gap-2 text-ink-body bg-surface-elevated border border-line-subtle px-3.5 py-2 rounded-full text-xs sm:text-sm font-normal hover:bg-surface-hover transition-colors cursor-pointer"
       />
     </div>
   );

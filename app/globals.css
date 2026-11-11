@@ -1,52 +1,168 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   SINGLE-FILE THEME CONFIGURATION
+   Edit the CSS variables in :root below to re-theme the entire application.
+   ========================================================================== */
 :root {
-  --background: #050505;
-  --foreground: #f4f4f5;
+  color-scheme: dark;
+
+  /* Core Backgrounds & Surfaces */
+  --theme-app-bg: #050505;
+  --theme-surface: #0e0e10;
+  --theme-surface-elevated: #18181b;
+  --theme-surface-hover: #202024;
+  --theme-nav-active: #18181b;
+  --theme-nav-hover: #141417;
+  --theme-backdrop: rgba(0, 0, 0, 0.65);
+
+  /* Typography / Ink Hierarchy */
+  --theme-ink-primary: #f4f4f5;
+  --theme-ink-secondary: #e4e4e7;
+  --theme-ink-body: #d4d4d8;
+  --theme-ink-muted: #a1a1aa;
+  --theme-ink-subtle: #71717a;
+  --theme-ink-faint: #52525b;
+  --theme-ink-placeholder: #52525b;
+
+  /* Primary Contrast CTA (buttons, active pills) */
+  --theme-cta-bg: #f4f4f5;
+  --theme-cta-hover: #ffffff;
+  --theme-cta-ink: #09090b;
+  --theme-cta-badge-bg: rgba(9, 9, 11, 0.14);
+  --theme-cta-badge-ink: #18181b;
+
+  /* Borders & Translucent Fills */
+  --theme-border-faint: rgba(255, 255, 255, 0.04);
+  --theme-border-subtle: rgba(255, 255, 255, 0.06);
+  --theme-border-default: rgba(255, 255, 255, 0.08);
+  --theme-border-strong: rgba(255, 255, 255, 0.14);
+  --theme-border-focus: rgba(255, 255, 255, 0.22);
+
+  --theme-tint-subtle: rgba(255, 255, 255, 0.04);
+  --theme-tint-default: rgba(255, 255, 255, 0.06);
+  --theme-tint-hover: rgba(255, 255, 255, 0.08);
+  --theme-tint-active: rgba(255, 255, 255, 0.12);
+
+  /* Brand & Semantic Status Colors */
+  --theme-accent: #e16449;
+  --theme-accent-soft: rgba(225, 100, 73, 0.18);
+  --theme-accent-mild: #d4d4d8;
+  --theme-green: #4ade80;
+  --theme-green-soft: rgba(74, 222, 128, 0.12);
+  --theme-red: #f87171;
+  --theme-red-soft: rgba(248, 113, 113, 0.12);
+
+  /* Wallet Card Surfaces & Peeking Deck */
+  --theme-wallet-card-bg: linear-gradient(135deg, #1c1b22 0%, #121215 100%);
+  --theme-wallet-deck-0: linear-gradient(135deg, #23202e 0%, #18171f 50%, #111115 100%);
+  --theme-wallet-deck-1: linear-gradient(135deg, #1c2329 0%, #151a1f 50%, #101215 100%);
+  --theme-wallet-deck-2: linear-gradient(135deg, #281f21 0%, #1b1618 50%, #121011 100%);
+  --theme-wallet-peek-bg: linear-gradient(90deg, #f4f4f5 0%, #e4e4e7 50%, #d4d4d8 100%);
+  --theme-wallet-peek-ink: #18181b;
+  --theme-wallet-peek-muted: #52525b;
+
+  /* Chrome, Shadows & Loader */
+  --theme-scrollbar-thumb: #27272a;
+  --theme-shadow-dropdown: 0px 12px 32px rgba(0, 0, 0, 0.45);
+  --theme-loader-dot: #a1a1aa;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-}
-
-@theme {
   --font-aeonik: var(--font-aeonik);
   --font-inter: var(--font-inter);
 
-  --color-app-bg: #050505;
-  --color-surface: #0e0e10;
-  --color-surface-elevated: #18181b;
-  --color-surface-hover: #202024;
+  /* Backgrounds & Surfaces */
+  --color-background: var(--theme-app-bg);
+  --color-foreground: var(--theme-ink-primary);
+  --color-app-bg: var(--theme-app-bg);
+  --color-surface: var(--theme-surface);
+  --color-surface-elevated: var(--theme-surface-elevated);
+  --color-surface-hover: var(--theme-surface-hover);
+  --color-nav-active: var(--theme-nav-active);
+  --color-nav-hover: var(--theme-nav-hover);
+  --color-backdrop: var(--theme-backdrop);
 
-  --color-sidebar-sec: #71717a;
-  --color-nav-active: #18181b;
-  --color-nav-hover: #141417;
-  --color-accent: #e16449;
-  --color-accent-mild: #d4d4d8;
-  --color-sec-96: #8e8e93;
-  --color-gray-bc: #52525b;
+  /* Typography / Ink */
+  --color-ink-primary: var(--theme-ink-primary);
+  --color-ink-secondary: var(--theme-ink-secondary);
+  --color-ink-body: var(--theme-ink-body);
+  --color-ink-muted: var(--theme-ink-muted);
+  --color-ink-subtle: var(--theme-ink-subtle);
+  --color-ink-faint: var(--theme-ink-faint);
+  --color-ink-placeholder: var(--theme-ink-placeholder);
 
-  --color-green-10: rgba(74, 222, 128, 0.12);
-  --color-green-100: #4ade80;
-  --color-red-10: rgba(248, 113, 113, 0.12);
-  --color-red-100: #f87171;
+  /* Contrast CTA */
+  --color-cta: var(--theme-cta-bg);
+  --color-cta-hover: var(--theme-cta-hover);
+  --color-cta-ink: var(--theme-cta-ink);
+  --color-cta-badge: var(--theme-cta-badge-bg);
+  --color-cta-badge-ink: var(--theme-cta-badge-ink);
 
-  --color-amount-primary: #f4f4f5;
-  --color-card-title: #e4e4e7;
-  --color-wallet-item-title: #f4f4f5;
+  /* Borders & Tints */
+  --color-line-faint: var(--theme-border-faint);
+  --color-line-subtle: var(--theme-border-subtle);
+  --color-line: var(--theme-border-default);
+  --color-line-strong: var(--theme-border-strong);
+  --color-line-focus: var(--theme-border-focus);
 
-  --color-gray-5a: #a1a1aa;
-  --color-gray-3a: #f4f4f5;
-  --color-gray-4c: #d4d4d8;
-  --color-gray-ef: #27272a;
-  --color-gray-46: #a1a1aa;
-  --shadow-dropdown-sm: 0px 12px 32px rgba(0, 0, 0, 0.45);
+  --color-tint-subtle: var(--theme-tint-subtle);
+  --color-tint: var(--theme-tint-default);
+  --color-tint-hover: var(--theme-tint-hover);
+  --color-tint-active: var(--theme-tint-active);
+
+  /* Status & Legacy Semantic Tokens */
+  --color-accent: var(--theme-accent);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-accent-mild: var(--theme-accent-mild);
+  --color-green-10: var(--theme-green-soft);
+  --color-green-100: var(--theme-green);
+  --color-red-10: var(--theme-red-soft);
+  --color-red-100: var(--theme-red);
+
+  --color-sidebar-sec: var(--theme-ink-subtle);
+  --color-sec-96: var(--theme-ink-muted);
+  --color-gray-bc: var(--theme-ink-faint);
+  --color-amount-primary: var(--theme-ink-primary);
+  --color-card-title: var(--theme-ink-secondary);
+  --color-wallet-item-title: var(--theme-ink-primary);
+  --color-gray-5a: var(--theme-ink-muted);
+  --color-gray-3a: var(--theme-ink-primary);
+  --color-gray-4c: var(--theme-ink-body);
+  --color-gray-ef: var(--theme-scrollbar-thumb);
+  --color-gray-46: var(--theme-ink-muted);
+
+  --shadow-dropdown-sm: var(--theme-shadow-dropdown);
+}
+
+body {
+  background: var(--theme-app-bg);
+  color: var(--theme-ink-primary);
+}
+
+.wallet-card-surface {
+  background: var(--theme-wallet-card-bg);
+}
+
+.wallet-deck-0 {
+  background: var(--theme-wallet-deck-0);
+}
+
+.wallet-deck-1 {
+  background: var(--theme-wallet-deck-1);
+}
+
+.wallet-deck-2 {
+  background: var(--theme-wallet-deck-2);
+}
+
+.wallet-peek-surface {
+  background: var(--theme-wallet-peek-bg);
+  color: var(--theme-wallet-peek-ink);
+}
+
+.wallet-peek-muted {
+  color: var(--theme-wallet-peek-muted);
 }
 
 .no-scrollbar {
@@ -69,7 +185,7 @@ body {
 .scrollbar-minimal::-webkit-scrollbar-thumb {
   width: 5px;
   border-radius: 8px;
-  background-color: #27272a;
+  background-color: var(--theme-scrollbar-thumb);
 }
 
 .scrollbar-minimal::-webkit-scrollbar-track {

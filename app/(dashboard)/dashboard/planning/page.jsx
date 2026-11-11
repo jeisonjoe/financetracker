@@ -40,7 +40,7 @@ function PlanningContent() {
   return (
     <div className="flex flex-col gap-6 pb-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap bg-surface-elevated/60 border border-white/[0.06] p-1 rounded-full gap-1">
+        <div className="flex flex-wrap bg-surface-elevated/60 border border-line-subtle p-1 rounded-full gap-1">
           {TABS.map((tab) => {
             const active = activeTab === tab.key;
             const Icon = tab.icon;
@@ -58,8 +58,8 @@ function PlanningContent() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-2 rounded-full text-xs sm:text-sm font-normal flex items-center gap-2 cursor-pointer transition-all duration-200 active:scale-[0.98] ${
                   active
-                    ? "bg-zinc-100 text-zinc-950 font-medium"
-                    : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]"
+                    ? "bg-cta text-cta-ink font-medium"
+                    : "text-ink-muted hover:text-ink-primary hover:bg-tint-subtle"
                 }`}
               >
                 <Icon size={15} />
@@ -68,11 +68,11 @@ function PlanningContent() {
                   <span
                     className={`px-1.5 py-0.5 rounded-full text-[11px] leading-none tabular-nums ${
                       active
-                        ? "bg-zinc-950/15 text-zinc-900"
+                        ? "bg-cta-badge text-cta-badge-ink"
                         : tab.key === "recurring" &&
                           (planning?.recurringSummary?.overdueCount || 0) > 0
                         ? "bg-red-10 text-red-100"
-                        : "bg-white/[0.08] text-zinc-300"
+                        : "bg-tint-hover text-ink-body"
                     }`}
                   >
                     {badge}

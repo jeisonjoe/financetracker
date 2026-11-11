@@ -30,21 +30,21 @@ export default function Modal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed z-50 inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-backdrop-in"
+      className="fixed z-50 inset-0 flex items-center justify-center bg-backdrop backdrop-blur-xs p-4 animate-backdrop-in"
       onClick={() => onClose?.()}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`flex flex-col gap-4 bg-surface p-6 rounded-2xl w-full ${maxWidth} border border-white/[0.08] animate-modal-in`}
+        className={`flex flex-col gap-4 bg-surface p-6 rounded-2xl w-full ${maxWidth} border border-line animate-modal-in`}
       >
         {(title || onClose) && (
           <div className="flex items-start justify-between gap-3">
             <div>
               {title && (
-                <h3 className="text-lg font-normal text-zinc-100">{title}</h3>
+                <h3 className="text-lg font-normal text-ink-primary">{title}</h3>
               )}
               {subtitle && (
-                <p className="text-xs text-zinc-500 mt-0.5">{subtitle}</p>
+                <p className="text-xs text-ink-subtle mt-0.5">{subtitle}</p>
               )}
             </div>
             {onClose && (
@@ -52,7 +52,7 @@ export default function Modal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close dialog"
-                className="p-1.5 rounded-full bg-surface-elevated hover:bg-surface-hover text-zinc-400 hover:text-zinc-100 cursor-pointer transition-colors"
+                className="p-1.5 rounded-full bg-surface-elevated hover:bg-surface-hover text-ink-muted hover:text-ink-primary cursor-pointer transition-colors"
               >
                 <BiX size={18} />
               </button>

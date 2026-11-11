@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }) {
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
       />
-      <div className="grow flex flex-col min-w-0 bg-surface border border-white/[0.05] rounded-3xl p-5 sm:p-8 lg:p-10 lg:overflow-y-auto scrollbar-minimal">
+      <div className="grow flex flex-col min-w-0 bg-surface border border-line-subtle rounded-3xl p-5 sm:p-8 lg:p-10 lg:overflow-y-auto scrollbar-minimal">
         <Header onOpenMobileNav={() => setMobileNavOpen(true)} />
         <div key={pathname} className="grow flex flex-col animate-fade-up">
           {children}

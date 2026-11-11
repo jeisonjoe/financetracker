@@ -14,18 +14,18 @@ export default function ActionModal({
     {
       text: secBtnText || "Cancel",
       action: () => secAction && secAction(),
-      className: "bg-surface-elevated text-zinc-300 hover:bg-surface-hover",
+      className: "bg-surface-elevated text-ink-body hover:bg-surface-hover",
     },
     {
       text: primaryBtnText || "Confirm",
       action: () => primaryAction && primaryAction(),
-      className: "bg-zinc-100 text-zinc-950 hover:bg-white",
+      className: "bg-cta text-cta-ink hover:bg-cta-hover",
     },
   ];
 
   return (
     <Modal isOpen={isOpen} onClose={secAction} maxWidth="max-w-md">
-      <div className="text-base text-zinc-200 font-normal">
+      <div className="text-base text-ink-secondary font-normal">
         {content || "Are you sure?"}
       </div>
       <div className="flex gap-2 items-center justify-end pt-1">

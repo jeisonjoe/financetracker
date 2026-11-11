@@ -45,57 +45,57 @@ export default function Page() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pb-6">
       <form
         onSubmit={handleSave}
-        className="lg:col-span-7 bg-surface-elevated/50 rounded-2xl border border-white/[0.06] p-6 flex flex-col gap-5"
+        className="lg:col-span-7 bg-surface-elevated/50 rounded-2xl border border-line-subtle p-6 flex flex-col gap-5"
       >
         <div>
-          <h2 className="text-lg font-normal text-zinc-200">
-            Profile & Display Preferences
+          <h2 className="text-lg font-normal text-ink-secondary">
+            Profile &amp; Display Preferences
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
+          <p className="text-xs text-ink-subtle mt-0.5">
             Manage your account details and preferred currency display.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500">First Name</label>
+            <label className="text-xs text-ink-subtle">First Name</label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="bg-surface border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-white/20"
+              className="bg-surface border border-line-subtle rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500">Last Name</label>
+            <label className="text-xs text-ink-subtle">Last Name</label>
             <input
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="bg-surface border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-white/20"
+              className="bg-surface border border-line-subtle rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500">Email</label>
+            <label className="text-xs text-ink-subtle">Email</label>
             <input
               type="email"
               value={user?.email || ""}
               disabled
-              className="bg-surface border border-white/[0.04] rounded-xl px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed"
+              className="bg-surface border border-line-faint rounded-xl px-4 py-2.5 text-sm text-ink-subtle cursor-not-allowed"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500">Currency</label>
+            <label className="text-xs text-ink-subtle">Currency</label>
             <Dropdown
               options={CURRENCY_OPTIONS}
               value={currency}
               onChange={(opt) => setCurrency(opt.key)}
-              triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-white/[0.06] hover:bg-surface-hover rounded-xl px-4 py-2.5 text-sm text-zinc-100 cursor-pointer transition-colors"
+              triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-line-subtle hover:bg-surface-hover rounded-xl px-4 py-2.5 text-sm text-ink-primary cursor-pointer transition-colors"
             />
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function Page() {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 rounded-full text-sm font-medium cursor-pointer transition-colors disabled:opacity-60"
+            className="px-6 py-2.5 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-sm font-medium cursor-pointer transition-colors disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save Preferences"}
           </button>
@@ -112,33 +112,33 @@ export default function Page() {
       </form>
 
       <div className="lg:col-span-5 flex flex-col gap-4">
-        <div className="bg-surface-elevated/50 rounded-2xl border border-white/[0.06] p-6 flex flex-col gap-2">
-          <h3 className="text-base font-normal text-zinc-200">
+        <div className="bg-surface-elevated/50 rounded-2xl border border-line-subtle p-6 flex flex-col gap-2">
+          <h3 className="text-base font-normal text-ink-secondary">
             Active Storage Provider
           </h3>
-          <p className="text-sm text-zinc-400 leading-relaxed">
+          <p className="text-sm text-ink-muted leading-relaxed">
             Currently connected via{" "}
-            <span className="font-medium text-zinc-100">
+            <span className="font-medium text-ink-primary">
               {provider === "mysql" ? "MySQL" : "Supabase"}
             </span>
             . You can switch between MySQL and Supabase anytime using{" "}
-            <code className="px-1.5 py-0.5 bg-surface rounded text-xs text-zinc-200">
+            <code className="px-1.5 py-0.5 bg-surface rounded text-xs text-ink-secondary">
               DB_PROVIDER
             </code>{" "}
             in your environment file.
           </p>
         </div>
 
-        <div className="bg-surface-elevated/50 rounded-2xl border border-white/[0.06] p-6 flex flex-col gap-3">
-          <h3 className="text-base font-normal text-zinc-200">
+        <div className="bg-surface-elevated/50 rounded-2xl border border-line-subtle p-6 flex flex-col gap-3">
+          <h3 className="text-base font-normal text-ink-secondary">
             Google Pay Import
           </h3>
-          <p className="text-sm text-zinc-400 leading-relaxed">
+          <p className="text-sm text-ink-muted leading-relaxed">
             Parse and import historical transactions from your Google Pay activity export.
           </p>
           <Link
             href="/import"
-            className="self-start px-4 py-2 bg-surface hover:bg-surface-hover border border-white/[0.06] text-zinc-200 rounded-full text-sm transition-colors"
+            className="self-start px-4 py-2 bg-surface hover:bg-surface-hover border border-line-subtle text-ink-secondary rounded-full text-sm transition-colors"
           >
             Open Data Importer
           </Link>

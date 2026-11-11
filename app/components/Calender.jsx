@@ -103,12 +103,12 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
         <button
           type="button"
           onClick={goPrev}
-          className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] rounded-lg transition-colors cursor-pointer"
+          className="p-2 text-ink-muted hover:text-ink-primary hover:bg-tint rounded-lg transition-colors cursor-pointer"
         >
           <BiChevronLeft size={20} />
         </button>
 
-        <span className="text-zinc-100 font-medium text-base capitalize">
+        <span className="text-ink-primary font-medium text-base capitalize">
           {visibleMonth.toLocaleString(undefined, { month: "long" })}{" "}
           {visibleMonth.getFullYear()}
         </span>
@@ -116,7 +116,7 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
         <button
           type="button"
           onClick={goNext}
-          className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] rounded-lg transition-colors cursor-pointer"
+          className="p-2 text-ink-muted hover:text-ink-primary hover:bg-tint rounded-lg transition-colors cursor-pointer"
         >
           <BiChevronRight size={20} />
         </button>
@@ -126,7 +126,7 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
         {WEEKDAY_SHORT.map((wd) => (
           <div
             key={wd}
-            className="text-xs font-medium text-zinc-500 text-center py-1.5"
+            className="text-xs font-medium text-ink-subtle text-center py-1.5"
           >
             {wd}
           </div>
@@ -145,14 +145,14 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
               key={idx}
               onClick={() => selectDate(currentMonth, date)}
               className={`aspect-square rounded-full flex items-center justify-center text-sm transition-colors cursor-pointer ${
-                !currentMonth ? "text-zinc-700" : "text-zinc-300 font-normal"
+                !currentMonth ? "text-ink-faint" : "text-ink-body font-normal"
               } ${
                 isSelected
-                  ? "bg-zinc-100 text-zinc-950 font-medium"
-                  : "hover:bg-white/[0.06]"
+                  ? "bg-cta text-cta-ink font-medium"
+                  : "hover:bg-tint"
               } ${
                 isToday && !isSelected
-                  ? "ring-1 ring-white/25 text-zinc-100 font-medium"
+                  ? "ring-1 ring-line-focus text-ink-primary font-medium"
                   : ""
               }`}
             >
@@ -162,7 +162,7 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
         })}
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs pt-3 border-t border-white/[0.06]">
+      <div className="mt-3 flex items-center justify-between text-xs pt-3 border-t border-line-subtle">
         <button
           type="button"
           onClick={() => {
@@ -171,7 +171,7 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
             setVisibleMonth(startOfMonth(yesterday));
             selectDate(true, yesterday);
           }}
-          className="px-3 py-1.5 rounded-full hover:bg-white/[0.06] text-zinc-400 font-medium cursor-pointer transition-colors"
+          className="px-3 py-1.5 rounded-full hover:bg-tint text-ink-muted font-medium cursor-pointer transition-colors"
         >
           Yesterday
         </button>
@@ -179,7 +179,7 @@ export default function Calendar({ value, defaultValue = null, onChange }) {
         <button
           type="button"
           onClick={goToday}
-          className="px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-zinc-100 font-medium cursor-pointer transition-colors"
+          className="px-3 py-1.5 rounded-full bg-tint-hover hover:bg-tint-active text-ink-primary font-medium cursor-pointer transition-colors"
         >
           Today
         </button>

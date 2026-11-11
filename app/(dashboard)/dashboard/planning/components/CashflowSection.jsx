@@ -115,8 +115,8 @@ export default function CashflowSection({
       label: "Needs & Fixed Bills",
       hint: "Recurring bills + essential category budgets",
       ...buckets.needs,
-      barColor: "bg-zinc-300",
-      dotColor: "bg-zinc-300",
+      barColor: "bg-ink-body",
+      dotColor: "bg-ink-body",
     },
     {
       key: "wants",
@@ -152,31 +152,31 @@ export default function CashflowSection({
     <div className="flex flex-col gap-6">
       {/* Top KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
-          <span className="text-xs text-zinc-500">Planned Monthly Income</span>
+        <div className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
+          <span className="text-xs text-ink-subtle">Planned Monthly Income</span>
           <AnimatedNumber
             value={cashflow.plannedIncome || 0}
             currency={currency}
-            className="text-2xl font-light text-zinc-100"
+            className="text-2xl font-light text-ink-primary"
           />
-          <span className="text-xs text-zinc-500">{incomeSourceLabel}</span>
+          <span className="text-xs text-ink-subtle">{incomeSourceLabel}</span>
         </div>
 
-        <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
-          <span className="text-xs text-zinc-500">Reserved Commitments</span>
+        <div className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
+          <span className="text-xs text-ink-subtle">Reserved Commitments</span>
           <AnimatedNumber
             value={cashflow.totalReserved || 0}
             currency={currency}
-            className="text-2xl font-light text-zinc-100"
+            className="text-2xl font-light text-ink-primary"
           />
-          <span className="text-xs text-zinc-500 tabular-nums">
+          <span className="text-xs text-ink-subtle tabular-nums">
             Bills {cFormat(cashflow.committedRecurringBills || 0, { currency })} • Goals{" "}
             {cFormat(cashflow.plannedGoalSavings || 0, { currency })}
           </span>
         </div>
 
-        <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
-          <span className="text-xs text-zinc-500">Unallocated Plan Margin</span>
+        <div className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
+          <span className="text-xs text-ink-subtle">Unallocated Plan Margin</span>
           <AnimatedNumber
             value={cashflow.freeToAllocate || 0}
             currency={currency}
@@ -186,21 +186,21 @@ export default function CashflowSection({
                 : "text-green-100"
             }`}
           />
-          <span className="text-xs text-zinc-500">
-            After category budgets & goal savings
+          <span className="text-xs text-ink-subtle">
+            After category budgets &amp; goal savings
           </span>
         </div>
 
-        <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
-          <span className="text-xs text-zinc-500">Free to Spend This Month</span>
+        <div className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-1.5 transition-colors hover:bg-surface-elevated/70">
+          <span className="text-xs text-ink-subtle">Free to Spend This Month</span>
           <AnimatedNumber
             value={cashflow.freeToSpend || 0}
             currency={currency}
             className={`text-2xl font-light ${
-              (cashflow.freeToSpend || 0) < 0 ? "text-red-100" : "text-zinc-100"
+              (cashflow.freeToSpend || 0) < 0 ? "text-red-100" : "text-ink-primary"
             }`}
           />
-          <span className="text-xs text-zinc-500 tabular-nums">
+          <span className="text-xs text-ink-subtle tabular-nums">
             Spent {cFormat(cashflow.actualExpenseThisMonth || 0, { currency })} • Due{" "}
             {cFormat(cashflow.dueThisMonthExpense || 0, { currency })}
           </span>
@@ -211,20 +211,20 @@ export default function CashflowSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <form
           onSubmit={handleSavePlan}
-          className="lg:col-span-5 bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-5"
+          className="lg:col-span-5 bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-5"
         >
-          <div className="pb-3 border-b border-white/[0.06]">
-            <h3 className="text-base font-normal text-zinc-200">
+          <div className="pb-3 border-b border-line-subtle">
+            <h3 className="text-base font-normal text-ink-secondary">
               Monthly Allocation Rules
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-ink-subtle mt-0.5">
               Adjust your income target, buffer, and split ratios interactively.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">
+              <label className="text-xs text-ink-subtle">
                 Expected Monthly Income
               </label>
               <input
@@ -238,12 +238,12 @@ export default function CashflowSection({
                   }))
                 }
                 placeholder="0"
-                className="bg-surface border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20 transition-colors"
+                className="bg-surface border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">
+              <label className="text-xs text-ink-subtle">
                 Monthly Safety Buffer
               </label>
               <input
@@ -257,7 +257,7 @@ export default function CashflowSection({
                   }))
                 }
                 placeholder="0"
-                className="bg-surface border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20 transition-colors"
+                className="bg-surface border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
           </div>
@@ -265,10 +265,10 @@ export default function CashflowSection({
           {/* Live Stacked Split Preview */}
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-500">Split Ratio Preview</span>
+              <span className="text-xs text-ink-subtle">Split Ratio Preview</span>
               <span
                 className={`text-xs tabular-nums transition-colors ${
-                  percentSum === 100 ? "text-zinc-400" : "text-red-100"
+                  percentSum === 100 ? "text-ink-muted" : "text-red-100"
                 }`}
               >
                 {percentSum === 100
@@ -277,10 +277,10 @@ export default function CashflowSection({
               </span>
             </div>
 
-            <div className="w-full h-2.5 rounded-full bg-white/[0.06] overflow-hidden flex gap-0.5">
+            <div className="w-full h-2.5 rounded-full bg-tint overflow-hidden flex gap-0.5">
               <div
                 style={{ width: `${Math.min(100, needsVal)}%` }}
-                className="h-full bg-zinc-300 transition-all duration-300 ease-out"
+                className="h-full bg-ink-body transition-all duration-300 ease-out"
               />
               <div
                 style={{ width: `${Math.min(100, wantsVal)}%` }}
@@ -312,8 +312,8 @@ export default function CashflowSection({
                     }
                     className={`px-3 py-1.5 rounded-full text-xs border cursor-pointer transition-all active:scale-[0.97] ${
                       isSelected
-                        ? "bg-zinc-100 text-zinc-950 border-zinc-100 font-medium"
-                        : "bg-surface border-white/[0.06] text-zinc-300 hover:bg-surface-hover"
+                        ? "bg-cta text-cta-ink border-cta font-medium"
+                        : "bg-surface border-line-subtle text-ink-body hover:bg-surface-hover"
                     }`}
                   >
                     {preset.label}
@@ -330,9 +330,9 @@ export default function CashflowSection({
                 key: "needs_percent",
                 label: "Needs",
                 val: needsVal,
-                dot: "bg-zinc-300",
-                fill: "bg-zinc-300",
-                thumb: "bg-zinc-100",
+                dot: "bg-ink-body",
+                fill: "bg-ink-body",
+                thumb: "bg-cta",
               },
               {
                 key: "wants_percent",
@@ -353,11 +353,11 @@ export default function CashflowSection({
             ].map((slider) => (
               <div key={slider.key} className="flex flex-col gap-0.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-zinc-300">
+                  <span className="flex items-center gap-2 text-ink-body">
                     <span className={`w-2 h-2 rounded-full ${slider.dot}`} />
                     {slider.label}
                   </span>
-                  <span className="text-zinc-400 tabular-nums">
+                  <span className="text-ink-muted tabular-nums">
                     {slider.val}%
                     {liveIncomePreview > 0
                       ? ` • ${cFormat(
@@ -388,7 +388,7 @@ export default function CashflowSection({
 
           {expenseCategoriesWithBudget.length > 0 && (
             <div className="flex flex-col gap-2 pt-1">
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-ink-subtle">
                 Budgeted Category Grouping (click to switch Needs / Wants)
               </span>
               <div className="flex flex-wrap gap-2">
@@ -408,14 +408,14 @@ export default function CashflowSection({
                       type="button"
                       key={cat.id}
                       onClick={() => toggleCategoryBucket(cat.name)}
-                      className="px-3 py-1.5 rounded-full text-xs bg-surface border border-white/[0.06] text-zinc-300 hover:bg-surface-hover flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+                      className="px-3 py-1.5 rounded-full text-xs bg-surface border border-line-subtle text-ink-body hover:bg-surface-hover flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
                     >
                       <span>{cat.name}</span>
                       <span
                         className={`px-1.5 py-0.5 rounded-full text-[11px] capitalize transition-colors ${
                           bucket === "needs"
-                            ? "bg-white/[0.08] text-zinc-200"
-                            : "bg-accent/20 text-accent"
+                            ? "bg-tint-hover text-ink-secondary"
+                            : "bg-accent-soft text-accent"
                         }`}
                       >
                         {bucket}
@@ -430,18 +430,18 @@ export default function CashflowSection({
           <button
             type="submit"
             disabled={updatePlan.isPending || percentSum !== 100}
-            className="mt-auto px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 rounded-full text-sm font-medium cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 self-start"
+            className="mt-auto px-5 py-2.5 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-sm font-medium cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 self-start"
           >
             {updatePlan.isPending ? "Saving..." : "Save Allocation Plan"}
           </button>
         </form>
 
-        <div className="lg:col-span-7 bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-5">
-          <div className="pb-3 border-b border-white/[0.06]">
-            <h3 className="text-base font-normal text-zinc-200">
+        <div className="lg:col-span-7 bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-5">
+          <div className="pb-3 border-b border-line-subtle">
+            <h3 className="text-base font-normal text-ink-secondary">
               Target vs. Planned Commitments
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-ink-subtle mt-0.5">
               How your recurring bills, category budgets, and goal contributions fit your split.
             </p>
           </div>
@@ -458,33 +458,33 @@ export default function CashflowSection({
               return (
                 <div
                   key={row.key}
-                  className="p-4 rounded-xl bg-surface border border-white/[0.05] flex flex-col gap-2.5 transition-colors hover:border-white/[0.1]"
+                  className="p-4 rounded-xl bg-surface border border-line-faint flex flex-col gap-2.5 transition-colors hover:border-line"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
-                      <div className="text-sm font-normal text-zinc-200 flex items-center gap-2">
+                      <div className="text-sm font-normal text-ink-secondary flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${row.dotColor}`} />
                         <span>{row.label}</span>
-                        <span className="text-xs text-zinc-500 tabular-nums">
+                        <span className="text-xs text-ink-subtle tabular-nums">
                           ({row.targetPercent}%)
                         </span>
                       </div>
-                      <div className="text-xs text-zinc-500 pl-4">{row.hint}</div>
+                      <div className="text-xs text-ink-subtle pl-4">{row.hint}</div>
                     </div>
                     <div className="text-right tabular-nums">
                       <AnimatedNumber
                         value={row.plannedAmount}
                         currency={currency}
                         className={`text-sm font-medium ${
-                          over ? "text-red-100" : "text-zinc-200"
+                          over ? "text-red-100" : "text-ink-secondary"
                         }`}
                       />
-                      <span className="text-xs text-zinc-500 ml-1">
+                      <span className="text-xs text-ink-subtle ml-1">
                         / {cFormat(row.targetAmount, { currency })} target
                       </span>
                     </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-tint overflow-hidden">
                     <div
                       style={{ width: `${pct}%` }}
                       className={`h-full rounded-full transition-all duration-700 ease-out ${
@@ -498,29 +498,29 @@ export default function CashflowSection({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            <div className="p-4 rounded-xl bg-surface border border-white/[0.05] flex flex-col gap-2.5">
+            <div className="p-4 rounded-xl bg-surface border border-line-faint flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-normal text-zinc-200">
+                <span className="text-sm font-normal text-ink-secondary">
                   Active Savings Goals
                 </span>
                 <button
                   type="button"
                   onClick={() => onNavigateTab("goals")}
-                  className="text-xs text-zinc-400 hover:text-zinc-100 cursor-pointer transition-colors"
+                  className="text-xs text-ink-muted hover:text-ink-primary cursor-pointer transition-colors"
                 >
                   Manage →
                 </button>
               </div>
               {topGoals.length === 0 ? (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-ink-subtle">
                   No active savings goals yet.
                 </p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {topGoals.map((g) => (
                     <div key={g.id} className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300 truncate pr-2">{g.name}</span>
-                      <span className="text-zinc-400 shrink-0 tabular-nums">
+                      <span className="text-ink-body truncate pr-2">{g.name}</span>
+                      <span className="text-ink-muted shrink-0 tabular-nums">
                         {g.progress_percent}%
                       </span>
                     </div>
@@ -529,33 +529,33 @@ export default function CashflowSection({
               )}
             </div>
 
-            <div className="p-4 rounded-xl bg-surface border border-white/[0.05] flex flex-col gap-2.5">
+            <div className="p-4 rounded-xl bg-surface border border-line-faint flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-normal text-zinc-200">
+                <span className="text-sm font-normal text-ink-secondary">
                   Upcoming Recurring
                 </span>
                 <button
                   type="button"
                   onClick={() => onNavigateTab("recurring")}
-                  className="text-xs text-zinc-400 hover:text-zinc-100 cursor-pointer transition-colors"
+                  className="text-xs text-ink-muted hover:text-ink-primary cursor-pointer transition-colors"
                 >
                   Manage →
                 </button>
               </div>
               {upcomingItems.length === 0 ? (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-ink-subtle">
                   No recurring bills or income scheduled.
                 </p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {upcomingItems.map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300 truncate pr-2">
+                      <span className="text-ink-body truncate pr-2">
                         {item.title}
                       </span>
                       <span
                         className={`shrink-0 tabular-nums ${
-                          item.type === "income" ? "text-green-100" : "text-zinc-400"
+                          item.type === "income" ? "text-green-100" : "text-ink-muted"
                         }`}
                       >
                         {item.type === "income" ? "+" : "-"}

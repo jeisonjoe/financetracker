@@ -6,7 +6,7 @@
 
     &>div {
         animation: growAndFade 3s infinite ease-out;
-        background-color: #a1a1aa;
+        background-color: var(--theme-loader-dot, #a1a1aa);
         border-radius: 50%;
         height: 100%;
         opacity: 0;

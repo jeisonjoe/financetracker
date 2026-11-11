@@ -47,8 +47,8 @@ function getDueBadge(item) {
   if (!item.is_active) {
     return {
       label: "Paused",
-      cls: "bg-white/[0.06] text-zinc-500",
-      dot: "bg-zinc-500",
+      cls: "bg-tint text-ink-subtle",
+      dot: "bg-ink-subtle",
     };
   }
   const days = item.days_until_due;
@@ -62,21 +62,21 @@ function getDueBadge(item) {
   if (days === 0) {
     return {
       label: "Due today",
-      cls: "bg-accent/20 text-accent",
+      cls: "bg-accent-soft text-accent",
       dot: "bg-accent",
     };
   }
   if (days <= 7) {
     return {
       label: `In ${days}d`,
-      cls: "bg-white/[0.08] text-zinc-200",
-      dot: "bg-zinc-200",
+      cls: "bg-tint-hover text-ink-secondary",
+      dot: "bg-ink-secondary",
     };
   }
   return {
     label: item.next_due_date,
-    cls: "bg-white/[0.05] text-zinc-400",
-    dot: "bg-zinc-500",
+    cls: "bg-tint text-ink-muted",
+    dot: "bg-ink-subtle",
   };
 }
 
@@ -181,7 +181,6 @@ export default function RecurringSection({ planning, currency }) {
     try {
       await processRecurring.mutateAsync({ id: item.id, action });
       if (action === "log") {
-        window.dispatchEvent(new CustomEvent("fintrack:transactions-updated"));
         toast.success(`Logged "${item.title}" & advanced due date`);
       } else {
         toast.success(`Skipped cycle for "${item.title}"`);
@@ -230,10 +229,10 @@ export default function RecurringSection({ planning, currency }) {
   return (
     <div className="flex flex-col gap-5">
       {/* Summary Header */}
-      <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-6">
           <div>
-            <div className="text-xs text-zinc-500">Monthly Recurring Income</div>
+            <div className="text-xs text-ink-subtle">Monthly Recurring Income</div>
             <div className="text-base font-medium text-green-100 mt-0.5">
               <AnimatedNumber
                 value={summary.monthlyIncome}
@@ -243,7 +242,7 @@ export default function RecurringSection({ planning, currency }) {
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500">Monthly Fixed Bills</div>
+            <div className="text-xs text-ink-subtle">Monthly Fixed Bills</div>
             <div className="text-base font-medium text-red-100 mt-0.5">
               <AnimatedNumber
                 value={summary.monthlyExpense}
@@ -253,10 +252,10 @@ export default function RecurringSection({ planning, currency }) {
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500">Net Monthly Recurring</div>
+            <div className="text-xs text-ink-subtle">Net Monthly Recurring</div>
             <div
               className={`text-base font-medium mt-0.5 ${
-                summary.netMonthlyRecurring < 0 ? "text-red-100" : "text-zinc-200"
+                summary.netMonthlyRecurring < 0 ? "text-red-100" : "text-ink-secondary"
               }`}
             >
               <AnimatedNumber
@@ -270,7 +269,7 @@ export default function RecurringSection({ planning, currency }) {
         <button
           type="button"
           onClick={openCreateModal}
-          className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+          className="px-5 py-2.5 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
         >
           <BiPlus size={18} />
           Add Schedule
@@ -289,8 +288,8 @@ export default function RecurringSection({ planning, currency }) {
                 onClick={() => setFilterMode(chip.key)}
                 className={`px-3.5 py-1.5 rounded-full text-xs cursor-pointer transition-all active:scale-[0.97] ${
                   active
-                    ? "bg-white/[0.1] text-zinc-100"
-                    : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
+                    ? "bg-tint-active text-ink-primary"
+                    : "text-ink-subtle hover:text-ink-secondary hover:bg-tint-subtle"
                 }`}
               >
                 {chip.label}
@@ -302,8 +301,8 @@ export default function RecurringSection({ planning, currency }) {
 
       {/* Items List */}
       {filteredItems.length === 0 ? (
-        <div className="bg-surface-elevated/40 border border-white/[0.06] rounded-2xl p-12 text-center flex flex-col items-center gap-3">
-          <p className="text-sm text-zinc-400">
+        <div className="bg-surface-elevated/40 border border-line-subtle rounded-2xl p-12 text-center flex flex-col items-center gap-3">
+          <p className="text-sm text-ink-muted">
             {items.length === 0
               ? "Track rent, subscriptions, EMIs, and expected salary to keep committed cash clear."
               : "No recurring items match this filter."}
@@ -312,7 +311,7 @@ export default function RecurringSection({ planning, currency }) {
             <button
               type="button"
               onClick={openCreateModal}
-              className="px-5 py-2 rounded-full bg-surface-elevated hover:bg-surface-hover border border-white/[0.08] text-sm text-zinc-200 cursor-pointer transition-all active:scale-[0.97]"
+              className="px-5 py-2 rounded-full bg-surface-elevated hover:bg-surface-hover border border-line text-sm text-ink-secondary cursor-pointer transition-all active:scale-[0.97]"
             >
               Add your first recurring item
             </button>
@@ -327,13 +326,13 @@ export default function RecurringSection({ planning, currency }) {
               <div
                 key={item.id}
                 style={{ animationDelay: `${Math.min(idx * 35, 210)}ms` }}
-                className="animate-fade-up bg-surface-elevated/50 border border-white/[0.06] hover:border-white/[0.12] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 transition-all duration-200"
+                className="animate-fade-up bg-surface-elevated/50 border border-line-subtle hover:border-line-strong rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 transition-all duration-200"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${badge.dot}`} />
                   <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-normal text-zinc-100">
+                      <span className="text-sm font-normal text-ink-primary">
                         {item.title}
                       </span>
                       <span
@@ -341,11 +340,11 @@ export default function RecurringSection({ planning, currency }) {
                       >
                         {badge.label}
                       </span>
-                      <span className="text-xs text-zinc-500 capitalize">
+                      <span className="text-xs text-ink-subtle capitalize">
                         {item.frequency}
                       </span>
                     </div>
-                    <div className="text-xs text-zinc-500">
+                    <div className="text-xs text-ink-subtle">
                       {item.wallet} • {item.category}
                       {item.frequency !== "monthly"
                         ? ` • ~${cFormat(item.monthly_equivalent, { currency })}/mo`
@@ -357,7 +356,7 @@ export default function RecurringSection({ planning, currency }) {
                 <div className="flex flex-wrap items-center gap-3">
                   <span
                     className={`text-base font-medium tabular-nums ${
-                      isIncome ? "text-green-100" : "text-zinc-200"
+                      isIncome ? "text-green-100" : "text-ink-secondary"
                     }`}
                   >
                     {isIncome ? "+" : "-"}
@@ -371,17 +370,17 @@ export default function RecurringSection({ planning, currency }) {
                           type="button"
                           onClick={() => handleProcess(item, "log")}
                           disabled={processRecurring.isPending}
-                          className="px-3 py-1.5 rounded-full bg-surface hover:bg-surface-hover border border-white/[0.08] text-xs text-zinc-200 flex items-center gap-1 cursor-pointer transition-all active:scale-[0.96]"
+                          className="px-3 py-1.5 rounded-full bg-surface hover:bg-surface-hover border border-line text-xs text-ink-secondary flex items-center gap-1 cursor-pointer transition-all active:scale-[0.96]"
                           title="Log as transaction & advance due date"
                         >
                           <BiCheckCircle size={14} />
-                          Log & Advance
+                          Log &amp; Advance
                         </button>
                         <button
                           type="button"
                           onClick={() => handleProcess(item, "skip")}
                           disabled={processRecurring.isPending}
-                          className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                          className="p-1.5 text-ink-subtle hover:text-ink-secondary hover:bg-tint rounded-full cursor-pointer transition-colors"
                           title="Skip this cycle"
                         >
                           <BiSkipNext size={17} />
@@ -391,7 +390,7 @@ export default function RecurringSection({ planning, currency }) {
                     <button
                       type="button"
                       onClick={() => toggleActive(item)}
-                      className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                      className="p-1.5 text-ink-subtle hover:text-ink-secondary hover:bg-tint rounded-full cursor-pointer transition-colors"
                       title={item.is_active ? "Pause" : "Resume"}
                     >
                       {item.is_active ? <BiPause size={16} /> : <BiPlay size={16} />}
@@ -399,7 +398,7 @@ export default function RecurringSection({ planning, currency }) {
                     <button
                       type="button"
                       onClick={() => openEditModal(item)}
-                      className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                      className="p-1.5 text-ink-subtle hover:text-ink-secondary hover:bg-tint rounded-full cursor-pointer transition-colors"
                       title="Edit"
                     >
                       <BiEdit size={15} />
@@ -407,7 +406,7 @@ export default function RecurringSection({ planning, currency }) {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(item)}
-                      className="p-1.5 text-zinc-500 hover:text-red-100 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                      className="p-1.5 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full cursor-pointer transition-colors"
                       title="Delete"
                     >
                       <BiTrash size={15} />
@@ -429,7 +428,7 @@ export default function RecurringSection({ planning, currency }) {
         maxWidth="max-w-lg"
       >
         <form onSubmit={handleSave} className="flex flex-col gap-4">
-          <div className="flex bg-surface-elevated border border-white/[0.06] p-1 rounded-full self-start">
+          <div className="flex bg-surface-elevated border border-line-subtle p-1 rounded-full self-start">
             {["expense", "income"].map((t) => (
               <button
                 type="button"
@@ -439,8 +438,8 @@ export default function RecurringSection({ planning, currency }) {
                   form.type === t
                     ? t === "income"
                       ? "bg-green-10 text-green-100"
-                      : "bg-zinc-100 text-zinc-950"
-                    : "text-zinc-500 hover:text-zinc-200"
+                      : "bg-cta text-cta-ink"
+                    : "text-ink-subtle hover:text-ink-secondary"
                 }`}
               >
                 {t}
@@ -450,7 +449,7 @@ export default function RecurringSection({ planning, currency }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Title</label>
+              <label className="text-xs text-ink-subtle">Title</label>
               <input
                 type="text"
                 placeholder="e.g. House Rent or Salary"
@@ -458,11 +457,11 @@ export default function RecurringSection({ planning, currency }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, title: e.target.value }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-white/20"
+                className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Amount</label>
+              <label className="text-xs text-ink-subtle">Amount</label>
               <input
                 type="number"
                 min="1"
@@ -471,14 +470,14 @@ export default function RecurringSection({ planning, currency }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, amount: e.target.value }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20"
+                className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Frequency</label>
+              <label className="text-xs text-ink-subtle">Frequency</label>
               <Dropdown
                 options={FREQUENCIES}
                 value={form.frequency}
@@ -486,7 +485,7 @@ export default function RecurringSection({ planning, currency }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Next Due Date</label>
+              <label className="text-xs text-ink-subtle">Next Due Date</label>
               <DatePicker
                 value={form.next_due_date}
                 onChange={(val) =>
@@ -500,15 +499,20 @@ export default function RecurringSection({ planning, currency }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Category</label>
+              <label className="text-xs text-ink-subtle">Category</label>
               <Dropdown
-                options={categories.map((c) => ({ key: c.name, name: c.name }))}
+                options={categories
+                  .filter(
+                    (c) =>
+                      c.type === form.type || c.type === "both" || !c.type
+                  )
+                  .map((c) => ({ key: c.name, name: c.name }))}
                 value={form.category}
                 onChange={(opt) => setForm((p) => ({ ...p, category: opt.key }))}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Preferred Wallet</label>
+              <label className="text-xs text-ink-subtle">Preferred Wallet</label>
               <Dropdown
                 options={wallets.map((w) => ({ key: w.name, name: w.name }))}
                 value={form.wallet}
@@ -518,14 +522,14 @@ export default function RecurringSection({ planning, currency }) {
           </div>
 
           {form.type === "expense" && (
-            <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+            <label className="flex items-center gap-2.5 text-xs text-ink-body cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.auto_reserve}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, auto_reserve: e.target.checked }))
                 }
-                className="rounded accent-zinc-200"
+                className="rounded accent-cta"
               />
               Reserve this bill in my monthly committed cashflow plan
             </label>
@@ -535,14 +539,14 @@ export default function RecurringSection({ planning, currency }) {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-zinc-300 hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
+              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createRecurring.isPending || updateRecurring.isPending}
-              className="px-5 py-2 rounded-full text-sm font-medium bg-zinc-100 text-zinc-950 hover:bg-white cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
+              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
             >
               {editingItem ? "Save Changes" : "Add Schedule"}
             </button>

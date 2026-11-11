@@ -12,8 +12,8 @@ export default function Slider({
   max = 100,
   step = 1,
   onChange,
-  fillClassName = "bg-zinc-300",
-  thumbClassName = "bg-zinc-100",
+  fillClassName = "bg-ink-body",
+  thumbClassName = "bg-cta",
   trackClassName = "",
   disabled = false,
   ariaLabel,
@@ -126,7 +126,7 @@ export default function Slider({
     >
       {/* Background track */}
       <div
-        className={`relative w-full h-1.5 rounded-full bg-white/[0.07] overflow-hidden ${trackClassName}`}
+        className={`relative w-full h-1.5 rounded-full bg-tint-hover overflow-hidden ${trackClassName}`}
       >
         {/* Active fill */}
         <div
@@ -140,8 +140,8 @@ export default function Slider({
         style={{ left: `calc(${percent}% - 8px)` }}
         className={`absolute w-4 h-4 rounded-full border-2 border-surface ${thumbClassName} ${motionClass} ${
           isDragging
-            ? "scale-115 ring-4 ring-white/[0.1]"
-            : "group-hover:scale-110 group-focus-visible:ring-4 group-focus-visible:ring-white/[0.12]"
+            ? "scale-115 ring-4 ring-tint-active"
+            : "group-hover:scale-110 group-focus-visible:ring-4 group-focus-visible:ring-tint-active"
         }`}
       />
     </div>

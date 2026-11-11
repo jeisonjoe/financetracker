@@ -63,23 +63,23 @@ export default function StatCards({ period = "this_month" }) {
         return (
           <div
             key={card.name}
-            className="flex flex-col justify-between gap-3 bg-surface-elevated/50 p-5 rounded-xl border border-white/[0.06]"
+            className="flex flex-col justify-between gap-3 bg-surface-elevated/50 p-5 rounded-xl border border-line-subtle"
           >
-            <div className="flex items-center text-zinc-500 gap-2 text-sm font-medium">
+            <div className="flex items-center text-ink-subtle gap-2 text-sm font-medium">
               <card.icon size={18} />
               <span>{card.name}</span>
             </div>
 
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-baseline text-zinc-100">
-                <span className="text-2xl font-medium mr-0.5 text-zinc-300">
+              <div className="flex items-baseline text-ink-primary">
+                <span className="text-2xl font-medium mr-0.5 text-ink-body">
                   {parts.sign}
                   {parts.symbol}
                 </span>
                 <span className="text-3xl font-semibold">
                   {isLoading ? "..." : parts.whole}
                 </span>
-                <span className="text-base font-normal text-zinc-500">
+                <span className="text-base font-normal text-ink-subtle">
                   .{parts.decimal}
                 </span>
               </div>
@@ -87,8 +87,8 @@ export default function StatCards({ period = "this_month" }) {
               <div
                 className={`text-xs px-2.5 py-1 rounded-full flex items-center gap-1 font-medium ${
                   card.positive
-                    ? "bg-emerald-500/10 text-emerald-400"
-                    : "bg-red-500/10 text-red-400"
+                    ? "bg-green-10 text-green-100"
+                    : "bg-red-10 text-red-100"
                 }`}
               >
                 {card.positive ? <GoArrowUp size={12} /> : <GoArrowDown size={12} />}
@@ -96,20 +96,20 @@ export default function StatCards({ period = "this_month" }) {
               </div>
             </div>
 
-            <div className="text-xs text-zinc-500">This Month</div>
+            <div className="text-xs text-ink-subtle">This Month</div>
           </div>
         );
       })}
 
-      <div className="flex items-center gap-5 bg-surface-elevated/50 p-5 rounded-xl border border-white/[0.06]">
-        <div className="w-16 h-16 rounded-2xl bg-zinc-100 text-zinc-950 text-2xl font-semibold flex items-center justify-center shrink-0">
+      <div className="flex items-center gap-5 bg-surface-elevated/50 p-5 rounded-xl border border-line-subtle">
+        <div className="w-16 h-16 rounded-2xl bg-cta text-cta-ink text-2xl font-semibold flex items-center justify-center shrink-0">
           {day}
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-lg font-semibold text-zinc-100 truncate">
+          <span className="text-lg font-semibold text-ink-primary truncate">
             {monthYear}
           </span>
-          <span className="text-sm text-zinc-500 font-medium">{weekday}</span>
+          <span className="text-sm text-ink-subtle font-medium">{weekday}</span>
         </div>
       </div>
     </div>

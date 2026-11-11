@@ -32,17 +32,17 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-9 items-start w-full">
-      <h2 className="text-zinc-100 text-3xl sm:text-4xl font-light">
+      <h2 className="text-ink-primary text-3xl sm:text-4xl font-light">
         Create new password
       </h2>
 
       <div className="w-full flex flex-col gap-5">
         <div className="flex flex-col gap-1.5 w-full">
-          <label htmlFor="newPassword" className="px-1 text-xs text-zinc-400 font-medium">
+          <label htmlFor="newPassword" className="px-1 text-xs text-ink-muted font-medium">
             New password
           </label>
           <input
-            className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
+            className="bg-surface-elevated border border-line-subtle text-ink-primary placeholder:text-ink-placeholder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-line-focus transition-colors"
             type="password"
             name="newPassword"
             id="newPassword"
@@ -54,7 +54,7 @@ function ResetPasswordForm() {
 
         <button
           type="submit"
-          className="w-full py-3.5 bg-zinc-100 text-zinc-950 text-sm font-medium rounded-full cursor-pointer hover:bg-white transition-colors disabled:opacity-60"
+          className="w-full py-3.5 bg-cta text-cta-ink text-sm font-medium rounded-full cursor-pointer hover:bg-cta-hover transition-colors disabled:opacity-60"
           disabled={isLoading}
         >
           {isLoading ? "Updating..." : "Update Password"}
@@ -67,7 +67,7 @@ function ResetPasswordForm() {
 export default function Page() {
   return (
     <AuthLayout redirectIfAuthenticated={false}>
-      <Suspense fallback={<div className="text-sm text-zinc-500">Loading...</div>}>
+      <Suspense fallback={<div className="text-sm text-ink-subtle">Loading...</div>}>
         <ResetPasswordForm />
       </Suspense>
     </AuthLayout>

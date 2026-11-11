@@ -35,21 +35,21 @@ export default function Page() {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="flex flex-col gap-9 items-start w-full">
         <div>
-          <h2 className="text-zinc-100 text-3xl sm:text-4xl font-light">
+          <h2 className="text-ink-primary text-3xl sm:text-4xl font-light">
             Reset your password
           </h2>
-          <p className="text-sm text-zinc-500 mt-1.5">
+          <p className="text-sm text-ink-subtle mt-1.5">
             Enter your registered email to receive a reset link.
           </p>
         </div>
 
         <div className="w-full flex flex-col gap-5">
           <div className="flex flex-col gap-1.5 w-full">
-            <label htmlFor="email" className="px-1 text-xs text-zinc-400 font-medium">
+            <label htmlFor="email" className="px-1 text-xs text-ink-muted font-medium">
               Registered email
             </label>
             <input
-              className="bg-surface-elevated border border-white/[0.06] text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-white/20 transition-colors"
+              className="bg-surface-elevated border border-line-subtle text-ink-primary placeholder:text-ink-placeholder rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-line-focus transition-colors"
               type="email"
               name="email"
               id="email"
@@ -61,23 +61,23 @@ export default function Page() {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-zinc-100 text-zinc-950 text-sm font-medium rounded-full cursor-pointer hover:bg-white transition-colors disabled:opacity-60"
+            className="w-full py-3.5 bg-cta text-cta-ink text-sm font-medium rounded-full cursor-pointer hover:bg-cta-hover transition-colors disabled:opacity-60"
             disabled={isLoading}
           >
             {isLoading ? "Sending..." : "Send Reset Link"}
           </button>
 
           {devResetUrl && (
-            <div className="p-4 rounded-xl bg-surface-elevated border border-white/[0.06] text-sm text-zinc-400">
-              <p className="mb-1.5 font-medium text-zinc-200">Direct reset link:</p>
-              <Link href={devResetUrl} className="text-zinc-100 underline break-all">
+            <div className="p-4 rounded-xl bg-surface-elevated border border-line-subtle text-sm text-ink-muted">
+              <p className="mb-1.5 font-medium text-ink-secondary">Direct reset link:</p>
+              <Link href={devResetUrl} className="text-ink-primary underline break-all">
                 {devResetUrl}
               </Link>
             </div>
           )}
 
-          <div className="text-zinc-500 text-sm">
-            <Link href="/" className="text-zinc-200 hover:underline font-medium">
+          <div className="text-ink-subtle text-sm">
+            <Link href="/" className="text-ink-secondary hover:underline font-medium">
               Back to Login
             </Link>
           </div>

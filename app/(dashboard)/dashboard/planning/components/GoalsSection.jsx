@@ -182,7 +182,7 @@ export default function GoalsSection({ planning, currency }) {
   return (
     <div className="flex flex-col gap-5">
       {/* Top Summary Bar */}
-      <div className="bg-surface-elevated/50 border border-white/[0.06] rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-3.5">
             <ProgressRing
@@ -191,23 +191,23 @@ export default function GoalsSection({ planning, currency }) {
               colorClass="text-green-100"
             />
             <div>
-              <div className="text-xs text-zinc-500">Total Saved in Goals</div>
-              <div className="text-xl font-light text-zinc-100 mt-0.5 tabular-nums">
+              <div className="text-xs text-ink-subtle">Total Saved in Goals</div>
+              <div className="text-xl font-light text-ink-primary mt-0.5 tabular-nums">
                 <AnimatedNumber value={summary.totalSaved} currency={currency} />
-                <span className="text-xs text-zinc-500 ml-1.5">
+                <span className="text-xs text-ink-subtle ml-1.5">
                   / {cFormat(summary.totalTarget, { currency })}
                 </span>
               </div>
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500">Remaining to Target</div>
-            <div className="text-base font-medium text-zinc-200 mt-0.5">
+            <div className="text-xs text-ink-subtle">Remaining to Target</div>
+            <div className="text-base font-medium text-ink-secondary mt-0.5">
               <AnimatedNumber value={summary.totalRemaining} currency={currency} />
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500">Planned Monthly Savings</div>
+            <div className="text-xs text-ink-subtle">Planned Monthly Savings</div>
             <div className="text-base font-medium text-green-100 mt-0.5">
               <AnimatedNumber
                 value={summary.totalMonthlyContribution}
@@ -221,7 +221,7 @@ export default function GoalsSection({ planning, currency }) {
         <button
           type="button"
           onClick={openCreateModal}
-          className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+          className="px-5 py-2.5 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
         >
           <BiPlus size={18} />
           New Goal
@@ -230,14 +230,14 @@ export default function GoalsSection({ planning, currency }) {
 
       {/* Goals Grid */}
       {goals.length === 0 ? (
-        <div className="bg-surface-elevated/40 border border-white/[0.06] rounded-2xl p-12 text-center flex flex-col items-center gap-3">
-          <p className="text-sm text-zinc-400">
+        <div className="bg-surface-elevated/40 border border-line-subtle rounded-2xl p-12 text-center flex flex-col items-center gap-3">
+          <p className="text-sm text-ink-muted">
             Create standalone savings pots for your emergency fund, travel, or major purchases.
           </p>
           <button
             type="button"
             onClick={openCreateModal}
-            className="px-5 py-2 rounded-full bg-surface-elevated hover:bg-surface-hover border border-white/[0.08] text-sm text-zinc-200 cursor-pointer transition-all active:scale-[0.97]"
+            className="px-5 py-2 rounded-full bg-surface-elevated hover:bg-surface-hover border border-line text-sm text-ink-secondary cursor-pointer transition-all active:scale-[0.97]"
           >
             Create your first goal
           </button>
@@ -251,7 +251,7 @@ export default function GoalsSection({ planning, currency }) {
               <div
                 key={goal.id}
                 style={{ animationDelay: `${Math.min(idx * 45, 240)}ms` }}
-                className="animate-fade-up bg-surface-elevated/50 border border-white/[0.06] hover:border-white/[0.12] rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-200 hover:-translate-y-0.5"
+                className="animate-fade-up bg-surface-elevated/50 border border-line-subtle hover:border-line-strong rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -259,11 +259,11 @@ export default function GoalsSection({ planning, currency }) {
                       percent={goal.progress_percent}
                       size={44}
                       strokeWidth={3.5}
-                      colorClass={isCompleted ? "text-green-100" : "text-zinc-200"}
+                      colorClass={isCompleted ? "text-green-100" : "text-ink-secondary"}
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-base font-normal text-zinc-100 truncate">
+                        <h4 className="text-base font-normal text-ink-primary truncate">
                           {goal.name}
                         </h4>
                         {isCompleted && (
@@ -272,12 +272,12 @@ export default function GoalsSection({ planning, currency }) {
                           </span>
                         )}
                         {isPaused && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-white/[0.08] text-zinc-400 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-tint-hover text-ink-muted shrink-0">
                             Paused
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-zinc-500 capitalize mt-0.5 truncate">
+                      <div className="text-xs text-ink-subtle capitalize mt-0.5 truncate">
                         {goal.category} • {goal.priority} priority
                         {goal.target_date ? ` • Due ${goal.target_date}` : ""}
                       </div>
@@ -289,7 +289,7 @@ export default function GoalsSection({ planning, currency }) {
                       <button
                         type="button"
                         onClick={() => toggleStatus(goal)}
-                        className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                        className="p-1.5 text-ink-subtle hover:text-ink-secondary hover:bg-tint rounded-full cursor-pointer transition-colors"
                         title={isPaused ? "Resume goal" : "Pause goal"}
                       >
                         {isPaused ? <BiPlay size={16} /> : <BiPause size={16} />}
@@ -298,7 +298,7 @@ export default function GoalsSection({ planning, currency }) {
                     <button
                       type="button"
                       onClick={() => openEditModal(goal)}
-                      className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                      className="p-1.5 text-ink-subtle hover:text-ink-secondary hover:bg-tint rounded-full cursor-pointer transition-colors"
                       title="Edit goal"
                     >
                       <BiEdit size={15} />
@@ -306,7 +306,7 @@ export default function GoalsSection({ planning, currency }) {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(goal)}
-                      className="p-1.5 text-zinc-500 hover:text-red-100 hover:bg-white/[0.06] rounded-full cursor-pointer transition-colors"
+                      className="p-1.5 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full cursor-pointer transition-colors"
                       title="Delete goal"
                     >
                       <BiTrash size={15} />
@@ -319,23 +319,23 @@ export default function GoalsSection({ planning, currency }) {
                     <AnimatedNumber
                       value={goal.current_amount}
                       currency={currency}
-                      className="text-xl font-light text-zinc-100"
+                      className="text-xl font-light text-ink-primary"
                     />
-                    <span className="text-xs text-zinc-500 tabular-nums">
+                    <span className="text-xs text-ink-subtle tabular-nums">
                       of {cFormat(goal.target_amount, { currency })}
                     </span>
                   </div>
 
-                  <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-tint overflow-hidden">
                     <div
                       style={{ width: `${goal.progress_percent}%` }}
                       className={`h-full rounded-full transition-all duration-700 ease-out ${
-                        isCompleted ? "bg-green-100" : "bg-zinc-300"
+                        isCompleted ? "bg-green-100" : "bg-ink-body"
                       }`}
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500 tabular-nums">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-subtle tabular-nums">
                     <span>
                       {goal.remaining_amount > 0
                         ? `${cFormat(goal.remaining_amount, { currency })} left`
@@ -354,11 +354,11 @@ export default function GoalsSection({ planning, currency }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-white/[0.05]">
+                <div className="flex items-center gap-2 pt-2 border-t border-line-faint">
                   <button
                     type="button"
                     onClick={() => openAdjustModal(goal, "add")}
-                    className="flex-1 py-2 rounded-full bg-surface hover:bg-surface-hover border border-white/[0.06] text-xs text-zinc-200 flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-[0.97]"
+                    className="flex-1 py-2 rounded-full bg-surface hover:bg-surface-hover border border-line-subtle text-xs text-ink-secondary flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-[0.97]"
                   >
                     <BiPlus size={14} />
                     Add Funds
@@ -367,7 +367,7 @@ export default function GoalsSection({ planning, currency }) {
                     type="button"
                     onClick={() => openAdjustModal(goal, "withdraw")}
                     disabled={goal.current_amount <= 0}
-                    className="flex-1 py-2 rounded-full bg-surface hover:bg-surface-hover border border-white/[0.06] text-xs text-zinc-400 flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-[0.97] disabled:opacity-40"
+                    className="flex-1 py-2 rounded-full bg-surface hover:bg-surface-hover border border-line-subtle text-xs text-ink-muted flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-[0.97] disabled:opacity-40"
                   >
                     <BiMinus size={14} />
                     Withdraw
@@ -389,19 +389,19 @@ export default function GoalsSection({ planning, currency }) {
       >
         <form onSubmit={handleSaveGoal} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500">Goal Name</label>
+            <label className="text-xs text-ink-subtle">Goal Name</label>
             <input
               type="text"
               placeholder="e.g. Emergency Fund"
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="bg-surface-elevated border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-white/20"
+              className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Target Amount</label>
+              <label className="text-xs text-ink-subtle">Target Amount</label>
               <input
                 type="number"
                 min="1"
@@ -410,11 +410,11 @@ export default function GoalsSection({ planning, currency }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, target_amount: e.target.value }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20"
+                className="bg-surface-elevated border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Saved So Far</label>
+              <label className="text-xs text-ink-subtle">Saved So Far</label>
               <input
                 type="number"
                 min="0"
@@ -423,11 +423,11 @@ export default function GoalsSection({ planning, currency }) {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, current_amount: e.target.value }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20"
+                className="bg-surface-elevated border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Monthly Plan</label>
+              <label className="text-xs text-ink-subtle">Monthly Plan</label>
               <input
                 type="number"
                 min="0"
@@ -439,14 +439,14 @@ export default function GoalsSection({ planning, currency }) {
                     monthly_contribution: e.target.value,
                   }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20"
+                className="bg-surface-elevated border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Category</label>
+              <label className="text-xs text-ink-subtle">Category</label>
               <Dropdown
                 options={GOAL_CATEGORIES}
                 value={form.category}
@@ -454,7 +454,7 @@ export default function GoalsSection({ planning, currency }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Priority</label>
+              <label className="text-xs text-ink-subtle">Priority</label>
               <Dropdown
                 options={PRIORITY_OPTIONS}
                 value={form.priority}
@@ -462,7 +462,7 @@ export default function GoalsSection({ planning, currency }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Target Date</label>
+              <label className="text-xs text-ink-subtle">Target Date</label>
               <DatePicker
                 value={form.target_date}
                 onChange={(val) => setForm((p) => ({ ...p, target_date: val }))}
@@ -477,14 +477,14 @@ export default function GoalsSection({ planning, currency }) {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-zinc-300 hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
+              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createGoal.isPending || updateGoal.isPending}
-              className="px-5 py-2 rounded-full text-sm font-medium bg-zinc-100 text-zinc-950 hover:bg-white cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
+              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
             >
               {editingGoal ? "Save Goal" : "Create Goal"}
             </button>
@@ -515,7 +515,7 @@ export default function GoalsSection({ planning, currency }) {
                 onClick={() =>
                   setAdjustAmount(String(adjustTarget.monthly_contribution))
                 }
-                className="px-3 py-1 rounded-full text-xs bg-surface-elevated hover:bg-surface-hover border border-white/[0.06] text-zinc-200 cursor-pointer transition-all active:scale-[0.97] tabular-nums"
+                className="px-3 py-1 rounded-full text-xs bg-surface-elevated hover:bg-surface-hover border border-line-subtle text-ink-secondary cursor-pointer transition-all active:scale-[0.97] tabular-nums"
               >
                 Monthly ({symbol}
                 {adjustTarget.monthly_contribution})
@@ -528,7 +528,7 @@ export default function GoalsSection({ planning, currency }) {
                 onClick={() =>
                   setAdjustAmount((prev) => String((Number(prev) || 0) + chip))
                 }
-                className="px-3 py-1 rounded-full text-xs bg-surface-elevated hover:bg-surface-hover border border-white/[0.06] text-zinc-300 cursor-pointer transition-all active:scale-[0.97] tabular-nums"
+                className="px-3 py-1 rounded-full text-xs bg-surface-elevated hover:bg-surface-hover border border-line-subtle text-ink-body cursor-pointer transition-all active:scale-[0.97] tabular-nums"
               >
                 +{symbol}
                 {chip}
@@ -543,20 +543,20 @@ export default function GoalsSection({ planning, currency }) {
             placeholder="Enter amount"
             value={adjustAmount}
             onChange={(e) => setAdjustAmount(e.target.value)}
-            className="bg-surface-elevated border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20"
+            className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setAdjustTarget(null)}
-              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-zinc-300 hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
+              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={updateGoal.isPending}
-              className="px-5 py-2 rounded-full text-sm font-medium bg-zinc-100 text-zinc-950 hover:bg-white cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
+              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
             >
               Confirm
             </button>
