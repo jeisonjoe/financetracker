@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cFormat, getCurrencySymbol } from "@/app/utils/currencyFormat";
 import { usePlanningMutations } from "@/app/hooks/useFinanceData";
 import ActionModal from "@/app/components/ActionModal";
+import DatePicker from "@/app/components/DatePicker";
 import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
 import AnimatedNumber from "@/app/components/AnimatedNumber";
@@ -462,13 +463,12 @@ export default function GoalsSection({ planning, currency }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-zinc-500">Target Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={form.target_date}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, target_date: e.target.value }))
-                }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-zinc-200 focus:outline-none"
+                onChange={(val) => setForm((p) => ({ ...p, target_date: val }))}
+                placeholder="Optional"
+                clearable={true}
+                align="right"
               />
             </div>
           </div>

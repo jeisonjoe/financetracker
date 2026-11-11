@@ -18,6 +18,7 @@ import {
   useWalletsQuery,
 } from "@/app/hooks/useFinanceData";
 import ActionModal from "@/app/components/ActionModal";
+import DatePicker from "@/app/components/DatePicker";
 import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
 import AnimatedNumber from "@/app/components/AnimatedNumber";
@@ -486,13 +487,13 @@ export default function RecurringSection({ planning, currency }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-zinc-500">Next Due Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={form.next_due_date}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, next_due_date: e.target.value }))
+                onChange={(val) =>
+                  setForm((p) => ({ ...p, next_due_date: val }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-zinc-200 focus:outline-none"
+                placeholder="Select due date"
+                align="right"
               />
             </div>
           </div>
