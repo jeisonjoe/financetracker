@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BiEdit, BiPlus, BiTransfer, BiTrash, BiWallet } from "react-icons/bi";
 import { toast } from "sonner";
 import { formatAmountParts, cFormat } from "@/app/utils/currencyFormat";
@@ -24,11 +24,16 @@ const WALLET_TYPE_OPTIONS = [
   { key: "digital", name: "Digital / UPI" },
 ];
 
+const EMPTY_WALLET_FORM = {
+  name: "",
+  type: "debit",
+  opening_balance: "",
+};
+
 export default function Page() {
   const [period, setPeriod] = useState("this_month");
-  const [name, setName] = useState("");
-  const [type, setType] = useState("debit");
-  const [openingBalance, setOpeningBalance] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_WALLET_FORM);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -49,35 +54,57 @@ export default function Page() {
     (analytics?.wallets || []).map((w) => [w.name, w])
   );
 
-  const combinedWallets = registeredWallets.map((w) => {
-    const stats = analyticsByName.get(w.name) || {};
-    return {
-      ...w,
-      opening_balance: Number(w.opening_balance ?? stats.openingBalance ?? 0),
-      balance: stats.balance ?? Number(w.opening_balance ?? 0),
-      earned: stats.earned ?? 0,
-      spent: stats.spent ?? 0,
-      transferredIn: stats.transferredIn ?? 0,
-      transferredOut: stats.transferredOut ?? 0,
-      transactionCount: stats.transactionCount ?? 0,
-    };
-  });
+  const combinedWallets = useMemo(
+    () =>
+      registeredWallets.map((w) => {
+        const stats = analyticsByName.get(w.name) || {};
+        return {
+          ...w,
+          opening_balance: Number(w.opening_balance ?? stats.openingBalance ?? 0),
+          balance: stats.balance ?? Number(w.opening_balance ?? 0),
+          earned: stats.earned ?? 0,
+          spent: stats.spent ?? 0,
+          transferredIn: stats.transferredIn ?? 0,
+          transferredOut: stats.transferredOut ?? 0,
+          transactionCount: stats.transactionCount ?? 0,
+        };
+      }),
+    [registeredWallets, analytics?.wallets]
+  );
+
+  const totals = useMemo(
+    () =>
+      combinedWallets.reduce(
+        (acc, w) => ({
+          balance: acc.balance + (Number(w.balance) || 0),
+          earned: acc.earned + (Number(w.earned) || 0),
+          spent: acc.spent + (Number(w.spent) || 0),
+        }),
+        { balance: 0, earned: 0, spent: 0 }
+      ),
+    [combinedWallets]
+  );
+
+  const openCreateModal = () => {
+    setCreateForm(EMPTY_WALLET_FORM);
+    setCreateOpen(true);
+  };
 
   const handleCreateWallet = async (e) => {
     e.preventDefault();
-    if (!name.trim()) {
+    if (!createForm.name.trim()) {
       toast.error("Please enter a wallet name");
       return;
     }
     try {
       await createWallet.mutateAsync({
-        name: name.trim(),
-        type,
-        opening_balance: Number(openingBalance) || 0,
+        name: createForm.name.trim(),
+        type: createForm.type,
+        opening_balance: Number(createForm.opening_balance) || 0,
       });
-      toast.success(`Wallet "${name.trim()}" added`);
-      setName("");
-      setOpeningBalance("");
+      toast.success(`Wallet "${createForm.name.trim()}" added`);
+      setCreateOpen(false);
+      setCreateForm(EMPTY_WALLET_FORM);
     } catch (err) {
       toast.error(err.message || "Failed to create wallet");
     }
@@ -129,57 +156,60 @@ export default function Page() {
 
   return (
     <div className="flex flex-col gap-6 pb-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-elevated/50 p-5 rounded-2xl border border-white/[0.06]">
-        <form
-          onSubmit={handleCreateWallet}
-          className="flex flex-wrap items-center gap-3 grow"
-        >
-          <input
-            type="text"
-            placeholder="New stream name (e.g. HDFC Credit)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-surface border border-white/[0.06] text-sm text-zinc-100 placeholder:text-zinc-600 px-4 py-2.5 rounded-full focus:outline-none focus:border-white/20 grow min-w-[180px] transition-colors"
-          />
-          <input
-            type="number"
-            placeholder="Opening balance"
-            value={openingBalance}
-            onChange={(e) => setOpeningBalance(e.target.value)}
-            className="bg-surface border border-white/[0.06] text-sm text-zinc-100 placeholder:text-zinc-600 px-4 py-2.5 rounded-full tabular-nums focus:outline-none focus:border-white/20 w-40 transition-colors"
-          />
-          <div className="w-36">
-            <Dropdown
-              options={WALLET_TYPE_OPTIONS}
-              value={type}
-              onChange={(opt) => setType(opt.key)}
-              triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-white/[0.06] hover:bg-surface-hover text-sm text-zinc-300 px-4 py-2.5 rounded-full focus:outline-none cursor-pointer transition-colors"
-            />
+      {/* KPI Summary & Actions Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-surface-elevated/50 p-5 rounded-2xl border border-line-subtle">
+        <div className="flex flex-wrap items-center gap-6">
+          <div>
+            <div className="text-xs text-ink-subtle">
+              Total Across {combinedWallets.length}{" "}
+              {combinedWallets.length === 1 ? "Wallet" : "Wallets"}
+            </div>
+            <div className="text-xl font-light text-ink-primary mt-0.5 tabular-nums">
+              {cFormat(totals.balance, { currency })}
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={createWallet.isPending}
-            className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
-          >
-            <BiPlus size={18} />
-            Add Stream
-          </button>
-        </form>
 
-        <div className="flex items-center gap-3">
+          <div className="h-8 w-px bg-line-subtle hidden sm:block" />
+
+          <div>
+            <div className="text-xs text-ink-subtle">Period Earned</div>
+            <div className="text-base font-medium text-green-100 mt-0.5 tabular-nums">
+              +{cFormat(totals.earned, { currency })}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs text-ink-subtle">Period Spent</div>
+            <div className="text-base font-medium text-red-100 mt-0.5 tabular-nums">
+              -{cFormat(totals.spent, { currency })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <PeriodSelector value={period} onChange={setPeriod} />
+
           {combinedWallets.length >= 2 && (
             <button
               type="button"
               onClick={() =>
                 open(AddTransactionSidebar, { initialType: "transfer" })
               }
-              className="px-4 py-2.5 rounded-full bg-surface border border-white/[0.08] hover:bg-surface-hover text-zinc-200 text-sm font-normal flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+              className="px-4 py-2 rounded-full bg-surface border border-line hover:bg-surface-hover text-ink-secondary text-sm font-normal flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
             >
               <BiTransfer size={16} />
-              Transfer Funds
+              Transfer
             </button>
           )}
-          <PeriodSelector value={period} onChange={setPeriod} />
+
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="px-4 py-2 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+          >
+            <BiPlus size={18} />
+            Add Wallet
+          </button>
         </div>
       </div>
 
@@ -193,8 +223,18 @@ export default function Page() {
           ))}
         </div>
       ) : combinedWallets.length === 0 ? (
-        <div className="bg-surface-elevated/40 rounded-2xl border border-white/[0.06] p-12 text-center text-zinc-500 text-sm">
-          No wallets configured yet. Add one above to get started.
+        <div className="bg-surface-elevated/40 rounded-2xl border border-line-subtle p-12 text-center flex flex-col items-center gap-3">
+          <p className="text-ink-subtle text-sm">
+            No wallets configured yet. Add your first wallet to start tracking balances.
+          </p>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="px-5 py-2 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-sm font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <BiPlus size={18} />
+            Add Wallet
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -206,18 +246,18 @@ export default function Page() {
               <div
                 key={wallet.id}
                 style={{ animationDelay: `${Math.min(idx * 45, 240)}ms` }}
-                className="animate-fade-up bg-gradient-to-br from-[#1C1B22] to-[#121215] rounded-2xl border border-white/[0.07] hover:border-white/[0.14] p-6 flex flex-col justify-between gap-5 transition-all duration-200 hover:-translate-y-0.5"
+                className="animate-fade-up wallet-card-surface rounded-2xl border border-line hover:border-line-strong p-6 flex flex-col justify-between gap-5 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-white/[0.06] text-zinc-200 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-tint text-ink-secondary flex items-center justify-center shrink-0">
                       <BiWallet size={18} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-base font-normal text-zinc-100 truncate">
+                      <span className="text-base font-normal text-ink-primary truncate">
                         {wallet.name}
                       </span>
-                      <span className="text-xs text-zinc-500 capitalize">
+                      <span className="text-xs text-ink-subtle capitalize">
                         {wallet.type} • {wallet.transactionCount} transactions
                       </span>
                     </div>
@@ -227,7 +267,7 @@ export default function Page() {
                     <button
                       type="button"
                       onClick={() => openEditModal(wallet)}
-                      className="p-2 text-zinc-500 hover:text-zinc-100 hover:bg-white/[0.06] rounded-full transition-colors cursor-pointer"
+                      className="p-2 text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full transition-colors cursor-pointer"
                       title="Edit wallet & opening balance"
                     >
                       <BiEdit size={16} />
@@ -235,7 +275,7 @@ export default function Page() {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(wallet)}
-                      className="p-2 text-zinc-500 hover:text-red-100 hover:bg-white/[0.06] rounded-full transition-colors cursor-pointer"
+                      className="p-2 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full transition-colors cursor-pointer"
                       title="Delete wallet"
                     >
                       <BiTrash size={16} />
@@ -244,7 +284,7 @@ export default function Page() {
                 </div>
 
                 {(wallet.opening_balance !== 0 || hasTransfers) && (
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 tabular-nums">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-ink-subtle tabular-nums">
                     {wallet.opening_balance !== 0 && (
                       <span>
                         Opening: {cFormat(wallet.opening_balance, { currency })}
@@ -259,16 +299,16 @@ export default function Page() {
                   </div>
                 )}
 
-                <div className="flex items-end justify-between pt-3 border-t border-white/[0.06]">
+                <div className="flex items-end justify-between pt-3 border-t border-line-subtle">
                   <div className="flex flex-col">
-                    <span className="text-xs text-zinc-500">Current Balance</span>
-                    <div className="flex items-baseline text-zinc-100 mt-0.5 tabular-nums">
-                      <span className="text-sm text-zinc-400 mr-0.5">
+                    <span className="text-xs text-ink-subtle">Current Balance</span>
+                    <div className="flex items-baseline text-ink-primary mt-0.5 tabular-nums">
+                      <span className="text-sm text-ink-muted mr-0.5">
                         {parts.sign}
                         {parts.symbol}
                       </span>
                       <span className="text-2xl font-light">{parts.whole}</span>
-                      <span className="text-xs text-zinc-500 ml-0.5">
+                      <span className="text-xs text-ink-subtle ml-0.5">
                         .{parts.decimal}
                       </span>
                     </div>
@@ -276,13 +316,13 @@ export default function Page() {
 
                   <div className="flex gap-4 text-right tabular-nums">
                     <div>
-                      <div className="text-xs text-zinc-500">Spent</div>
+                      <div className="text-xs text-ink-subtle">Spent</div>
                       <div className="text-sm font-medium text-red-100">
                         -{cFormat(wallet.spent, { currency })}
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-zinc-500">Earned</div>
+                      <div className="text-xs text-ink-subtle">Earned</div>
                       <div className="text-sm font-medium text-green-100">
                         +{cFormat(wallet.earned, { currency })}
                       </div>
@@ -295,29 +335,100 @@ export default function Page() {
         </div>
       )}
 
+      {/* Create Wallet Modal */}
+      <Modal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Add Wallet"
+        subtitle="Create a bank account, credit card, cash, or UPI wallet."
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleCreateWallet} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-ink-subtle">Wallet Name</label>
+            <input
+              type="text"
+              placeholder="e.g. HDFC Savings or UPI"
+              value={createForm.name}
+              onChange={(e) =>
+                setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+              autoFocus
+              className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary placeholder:text-ink-placeholder focus:outline-none focus:border-line-focus"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-ink-subtle">Type</label>
+              <Dropdown
+                options={WALLET_TYPE_OPTIONS}
+                value={createForm.type}
+                onChange={(opt) =>
+                  setCreateForm((prev) => ({ ...prev, type: opt.key }))
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-ink-subtle">Opening Balance</label>
+              <input
+                type="number"
+                placeholder="0"
+                value={createForm.opening_balance}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    opening_balance: e.target.value,
+                  }))
+                }
+                className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary placeholder:text-ink-placeholder tabular-nums focus:outline-none focus:border-line-focus"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setCreateOpen(false)}
+              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createWallet.isPending}
+              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
+            >
+              {createWallet.isPending ? "Adding..." : "Add Wallet"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Wallet Modal */}
       <Modal
         isOpen={Boolean(editTarget)}
         onClose={() => setEditTarget(null)}
-        title="Edit Stream Details"
-        subtitle="Update stream name, account type, or starting balance."
+        title="Edit Wallet Details"
+        subtitle="Update wallet name, account type, or starting balance."
         maxWidth="max-w-md"
       >
         <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500">Stream Name</label>
+            <label className="text-xs text-ink-subtle">Wallet Name</label>
             <input
               type="text"
               value={editForm.name}
               onChange={(e) =>
                 setEditForm((prev) => ({ ...prev, name: e.target.value }))
               }
-              className="bg-surface-elevated border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-white/20"
+              className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Type</label>
+              <label className="text-xs text-ink-subtle">Type</label>
               <Dropdown
                 options={WALLET_TYPE_OPTIONS}
                 value={editForm.type}
@@ -327,7 +438,7 @@ export default function Page() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-zinc-500">Opening Balance</label>
+              <label className="text-xs text-ink-subtle">Opening Balance</label>
               <input
                 type="number"
                 value={editForm.opening_balance}
@@ -337,7 +448,7 @@ export default function Page() {
                     opening_balance: e.target.value,
                   }))
                 }
-                className="bg-surface-elevated border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-100 tabular-nums focus:outline-none focus:border-white/20"
+                className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary tabular-nums focus:outline-none focus:border-line-focus"
               />
             </div>
           </div>
@@ -346,14 +457,14 @@ export default function Page() {
             <button
               type="button"
               onClick={() => setEditTarget(null)}
-              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-zinc-300 hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
+              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={updateWallet.isPending}
-              className="px-5 py-2 rounded-full text-sm font-medium bg-zinc-100 text-zinc-950 hover:bg-white cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
+              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
             >
               {updateWallet.isPending ? "Saving..." : "Save Changes"}
             </button>
