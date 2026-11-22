@@ -25,6 +25,7 @@ import { AuthService } from "../app/server/services/AuthService.js";
 import { CategoryService } from "../app/server/services/CategoryService.js";
 import { WalletService } from "../app/server/services/WalletService.js";
 import { PlanningService } from "../app/server/services/PlanningService.js";
+import { AiService, extractJsonFromText, parseStatementDate } from "../app/server/services/AiService.js";
 import { GooglePayParser } from "../app/lib/import/GooglePayParser.js";
 
 test("DatabaseConfig switches between mysql and supabase and rejects invalid values", () => {
@@ -438,4 +439,312 @@ test("PlanningService manages goals, recurring schedules, and cashflow allocatio
   assert.equal(overview.cashflow.committedRecurringBills, 12000);
   assert.equal(overview.cashflow.reserveBuffer, 3000);
 });
+
+test("AiService parses CSV statements, flags new categories, and generates insights via Gemini/Claude", async () => {
+  const unwrapped = extractJsonFromText('```json\n{"ok": true}\n```');
+  assert.equal(unwrapped.ok, true);
+
+  assert.equal(parseStatementDate("18/11/25"), "2025-11-18");
+  assert.equal(parseStatementDate("12-Jan-2026"), "2026-01-12");
+
+  let lastRequestUrl = "";
+  const mockFetch = async (url, options) => {
+    lastRequestUrl = String(url);
+    const body = JSON.parse(options.body);
+    const promptText = JSON.stringify(body);
+
+    if (lastRequestUrl.includes("generativelanguage.googleapis.com")) {
+      return {
+        ok: true,
+        async json() {
+          return {
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        items: [
+                          {
+                            i: 0,
+                            type: "expense",
+                            payee: "Swiggy",
+                            note: "Dinner order",
+                            category: "Food & Dining",
+                          },
+                          {
+                            i: 1,
+                            type: "expense",
+                            payee: "Spotify",
+                            note: "Music plan",
+                            category: "Subscriptions",
+                          },
+                        ],
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    if (lastRequestUrl.includes("api.anthropic.com") && promptText.includes("usageTrends")) {
+      return {
+        ok: true,
+        async json() {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  headline: "Spending is well within monthly income.",
+                  healthScore: 84,
+                  healthLabel: "Healthy",
+                  highlights: [{ title: "Savings", detail: "Strong surplus", impact: "positive", metric: "70%" }],
+                  usageTrends: [{ title: "Food spend", detail: "Moderate dining activity" }],
+                  subscriptionsAndLeaks: [{ name: "Spotify", estimatedMonthly: 199, frequency: "monthly", note: "Recurring" }],
+                  recommendations: [{ title: "Keep buffer", action: "Move surplus to emergency fund", potentialMonthlySavings: 500 }],
+                }),
+              },
+            ],
+          };
+        },
+      };
+    }
+
+    throw new Error(`Unexpected AI fetch call: ${lastRequestUrl}`);
+  };
+
+  const ai = new AiService({ fetchFn: mockFetch });
+  const prevGeminiKey = process.env.GEMINI_API_KEY;
+  const prevGoogleKey = process.env.GOOGLE_AI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GOOGLE_AI_API_KEY;
+  try {
+    assert.throws(() => ai.resolveCredentials({ provider: "gemini", apiKey: "" }), ValidationError);
+  } finally {
+    if (prevGeminiKey !== undefined) process.env.GEMINI_API_KEY = prevGeminiKey;
+    if (prevGoogleKey !== undefined) process.env.GOOGLE_AI_API_KEY = prevGoogleKey;
+  }
+
+  const csvBuffer = Buffer.from(
+    "Date,Narration,Chq./Ref.No.,Withdrawal Amt.,Deposit Amt.\n10/11/26,UPI/SWIGGY,UTR1001,450,\n11/11/26,SPOTIFY,,199,\n",
+    "utf8"
+  );
+
+  const parsed = await ai.parseBankStatement({
+    buffer: csvBuffer,
+    fileName: "statement.csv",
+    mimeType: "text/csv",
+    existingCategories: [{ name: "Food & Dining", type: "expense" }],
+    walletName: "HDFC Bank",
+    provider: "gemini",
+    apiKey: "test-gemini-key",
+  });
+
+  assert.equal(parsed.extractionMode, "hybrid");
+  assert.equal(parsed.count, 2);
+  assert.equal(parsed.transactions[0].date, "2026-11-10");
+  assert.equal(parsed.transactions[0].category, "Food & Dining");
+  assert.equal(parsed.transactions[0].suggestedNewCategory, false);
+  assert.equal(parsed.transactions[0].external_id, "stmt_UTR1001");
+  assert.equal(parsed.transactions[1].date, "2026-11-11");
+  assert.equal(parsed.transactions[1].category, "Entertainment");
+  assert.equal(parsed.transactions[1].suggestedNewCategory, true);
+
+  const insights = await ai.generateSpendInsights({
+    analytics: { period: "this_month", summary: { income: 50000, expense: 15000 } },
+    planning: { cashflow: {}, goalsSummary: {}, recurringSummary: {} },
+    transactions: [],
+    provider: "claude",
+    apiKey: "test-claude-key",
+  });
+
+  assert.equal(insights.provider, "claude");
+  assert.equal(insights.insights.healthScore, 84);
+  assert.equal(insights.insights.subscriptionsAndLeaks[0].name, "Spotify");
+
+  // Verify deprecated model normalization and modern model support
+  const deprecatedCreds = ai.resolveCredentials({ provider: "gemini", apiKey: "test-key", model: "gemini-2.5-pro" });
+  assert.equal(deprecatedCreds.model, "gemini-3.8-flash");
+
+  const modernCreds = ai.resolveCredentials({ provider: "gemini", apiKey: "test-key", model: "gemini-3.1-pro-preview" });
+  assert.equal(modernCreds.model, "gemini-3.1-pro-preview");
+
+  // Verify Interactions API response format with output_text and steps
+  const mockInteractionsFetch = async (url) => {
+    return {
+      ok: true,
+      async json() {
+        return {
+          id: "interaction-123",
+          status: "completed",
+          model: "gemini-3.8-flash",
+          output_text: JSON.stringify({ ok: true, source: "interactions_api" }),
+        };
+      },
+    };
+  };
+
+  const aiInteractions = new AiService({ fetchFn: mockInteractionsFetch });
+  const testConnResult = await aiInteractions.testConnection({
+    provider: "gemini",
+    apiKey: "test-gemini-key",
+    model: "gemini-3.8-flash",
+  });
+  assert.equal(testConnResult.ok, true);
+  assert.equal(testConnResult.model, "gemini-3.8-flash");
+});
+
+test("MerchantRuleService cleans UPI narrations, pairs reversals, and detects friend splits", async () => {
+  const { MerchantRuleService } = await import("../app/server/services/MerchantRuleService.js");
+
+  const upiBreakfast = MerchantRuleService.cleanNarration(
+    "UPI-SELVA KUMAR K-PAYTMQR6H5NVQ@PTYS-YESB0PTMUPI-568875919920-BREAKFAST"
+  );
+  assert.equal(upiBreakfast.payee, "Selva Kumar K");
+  assert.equal(upiBreakfast.note, "Breakfast");
+  assert.equal(upiBreakfast.reference, "568875919920");
+  assert.equal(upiBreakfast.isReversal, false);
+  assert.equal(upiBreakfast.isSplit, false);
+
+  const reversal = MerchantRuleService.cleanNarration(
+    "REV-UPI-50100643533957-JEISONJOE67-2@OKAXIS-659147363586-TOILET"
+  );
+  assert.equal(reversal.isReversal, true);
+  assert.equal(reversal.type, "income");
+  assert.equal(reversal.reference, "659147363586");
+
+  const splitLent = MerchantRuleService.cleanNarration(
+    "UPI-VISWANATHAN RAJENDRA-VISWANATHAN0709@OKAXIS-UTIB0000000-123456789012-LENDING",
+    "expense"
+  );
+  assert.equal(splitLent.isSplit, true);
+  assert.equal(splitLent.splitType, "lent");
+  assert.equal(splitLent.splitPerson, "Viswanathan Rajendra");
+
+  const salary = MerchantRuleService.categorizeTransaction({
+    rawNarration: "FT- ADMINWARE SALARY NOV-50200034312986 - ADMINWARE SOFTWARE",
+    amount: 61392,
+    type: "income",
+  });
+  assert.equal(salary.isSalary, true);
+  assert.equal(salary.category, "Salary");
+  assert.equal(salary.payee, "Adminware Software");
+
+  const metro = MerchantRuleService.categorizeTransaction({
+    rawNarration: "UPI-CUMTA-PAYTMQR6CSWM7@PTYS-YESB0PTMUPI-123456789012-METRO COMMUTE",
+    amount: 30,
+    type: "expense",
+  });
+  assert.equal(metro.category, "Travel");
+  assert.equal(metro.isMicroSpend, true);
+
+  const hdfcTrain = MerchantRuleService.categorizeTransaction({
+    rawNarration: "WDL TFR UPI/DR/667105010028/Indian R/SBIN/bdpg 2.ir@s/Pay 0097696162090 AT 02222",
+    amount: 522,
+    type: "expense",
+  });
+  assert.equal(hdfcTrain.category, "Travel");
+  assert.equal(hdfcTrain.payee, "Indian R");
+  assert.equal(hdfcTrain.reference, "667105010028");
+
+  const momTransfer = MerchantRuleService.categorizeTransaction({
+    rawNarration: "Mom",
+    note: "Mom",
+    payee: "Mlouisekala1977okaxi",
+    amount: 20000,
+    type: "expense",
+  });
+  assert.equal(momTransfer.category, "Transfer");
+
+  const dressPurchase = MerchantRuleService.categorizeTransaction({
+    rawNarration: "Dress",
+    note: "Dress",
+    payee: "Jafrin Joseph Antony",
+    amount: 4400,
+    type: "expense",
+  });
+  assert.equal(dressPurchase.category, "Shopping");
+});
+
+test("AnalyticsService nets reversals, tracks friend splits, computes micro-spends, and bounds salary cycle", async () => {
+  const fakeTxRepo = {
+    findInDateRange: async () => [
+      new TransactionEntity({
+        id: "tx-sal",
+        type: "income",
+        amount: 60000,
+        createdAt: "2026-10-29T10:00:00Z",
+        transaction: { payee: "Adminware Software", is_salary: true, category: { name: "Salary" } },
+      }),
+      new TransactionEntity({
+        id: "tx-fail-debit",
+        type: "expense",
+        amount: 50,
+        createdAt: "2026-11-01T12:00:00Z",
+        transaction: { payee: "Chai Shop", note: "Tea" },
+      }),
+      new TransactionEntity({
+        id: "tx-fail-reversal",
+        type: "income",
+        amount: 50,
+        createdAt: "2026-11-01T12:05:00Z",
+        transaction: { payee: "Reversal: Tea", is_reversal: true, note: "REV-UPI-123" },
+      }),
+      new TransactionEntity({
+        id: "tx-lent",
+        type: "expense",
+        amount: 500,
+        createdAt: "2026-11-02T14:00:00Z",
+        transaction: { payee: "Viswanathan", is_split: true, split_person: "Viswanathan", split_type: "lent" },
+      }),
+      new TransactionEntity({
+        id: "tx-metro",
+        type: "expense",
+        amount: 40,
+        createdAt: "2026-11-03T09:00:00Z",
+        transaction: { payee: "CUMTA", note: "Metro" },
+      }),
+    ],
+  };
+  const fakeCategoryRepo = { findAllForUser: async () => [] };
+  const fakeWalletRepo = { findAllForUser: async () => [{ id: "w1", name: "HDFC Bank", openingBalance: 10000 }] };
+
+  const analytics = new AnalyticsService(fakeTxRepo, fakeCategoryRepo, fakeWalletRepo);
+
+  const overview = await analytics.getDashboardOverview("user-1", "all_time");
+
+  // Reversal netting: ₹50 debit and ₹50 reversal should net to 0 expense impact
+  assert.equal(overview.summary.reversals, 50);
+  assert.equal(overview.summary.grossExpense, 590); // 50 + 500 + 40
+  assert.equal(overview.summary.expense, 540); // 590 - 50 reversal
+
+  // Friend splits summary
+  assert.equal(overview.splitsSummary.totalLent, 500);
+  assert.equal(overview.splitsSummary.byPerson[0].person, "Viswanathan");
+  assert.equal(overview.splitsSummary.byPerson[0].balance, 500);
+
+  // Micro spend leakage
+  assert.equal(overview.merchantIntelligence.microSpendSummary.count, 2); // 50 + 40
+  assert.equal(overview.merchantIntelligence.microSpendSummary.totalAmount, 90);
+
+  // Salary cycle bounds
+  const salaryBounds = analytics.getPeriodBounds("salary_cycle", [
+    new TransactionEntity({
+      id: "tx-sal",
+      type: "income",
+      amount: 60000,
+      createdAt: "2026-10-29T10:00:00Z",
+      transaction: { is_salary: true },
+    }),
+  ]);
+  assert.equal(salaryBounds.isSalaryCycle, true);
+  assert.equal(salaryBounds.payday, 29);
+  assert.equal(salaryBounds.salaryAmount, 60000);
+});
+
 

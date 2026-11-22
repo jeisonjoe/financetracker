@@ -49,7 +49,8 @@ export class UserEntity {
 export class TransactionEntity {
   constructor(row) {
     const meta = parseJsonColumn(row.transaction, {});
-    const createdAtDate = row.created_at ? new Date(row.created_at) : new Date();
+    const rawDate = row.created_at || row.createdAt;
+    const createdAtDate = rawDate ? new Date(rawDate) : new Date();
     const safeDate = Number.isNaN(createdAtDate.getTime())
       ? new Date()
       : createdAtDate;

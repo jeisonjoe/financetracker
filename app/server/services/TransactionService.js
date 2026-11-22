@@ -1,4 +1,5 @@
 import { ValidationError } from "../domain/errors.js";
+import { MerchantRuleService } from "./MerchantRuleService.js";
 
 /**
  * Application service for transaction CRUD and bulk import operations.
@@ -61,22 +62,43 @@ export class TransactionService {
       };
     }
 
+    const rawNote = rawMeta.note ?? body.note ?? "";
+    const rawPayee = rawMeta.payee ?? body.payee ?? rawNote;
+    const cleaned = MerchantRuleService.cleanNarration(rawPayee || rawNote, type);
+
+    const isSplit = Boolean(rawMeta.is_split ?? body.is_split ?? cleaned.isSplit);
+    const splitPerson = rawMeta.split_person ?? body.split_person ?? cleaned.splitPerson ?? null;
+    const splitType = rawMeta.split_type ?? body.split_type ?? cleaned.splitType ?? (type === "income" ? "settlement" : "lent");
+    const settled = Boolean(rawMeta.settled ?? body.settled ?? false);
+    const isReversal = Boolean(rawMeta.is_reversal ?? body.is_reversal ?? cleaned.isReversal);
+    const reversalRef = rawMeta.reversal_ref ?? body.reversal_ref ?? cleaned.reference ?? "";
+    const isSalary = Boolean(rawMeta.is_salary ?? body.is_salary ?? cleaned.isSalary);
+
     const categoryName =
       typeof rawMeta.category === "string"
         ? rawMeta.category
-        : rawMeta.category?.name || body.category || "Uncategorized";
+        : rawMeta.category?.name ||
+          body.category ||
+          (isReversal ? "Refund / Reversal" : isSalary ? "Salary" : "Uncategorized");
 
     const transaction = {
       ...rawMeta,
-      note: rawMeta.note ?? body.note ?? "",
-      payee: rawMeta.payee ?? body.payee ?? rawMeta.note ?? body.note ?? "",
+      note: rawNote || cleaned.note,
+      payee: rawPayee ? MerchantRuleService.titleCase(rawPayee) : cleaned.payee,
       time: rawMeta.time ?? body.time ?? "",
       category: { key: categoryName, name: categoryName },
       wallet: { key: walletName, name: walletName },
+      is_split: isSplit,
+      split_person: splitPerson ? MerchantRuleService.titleCase(splitPerson) : null,
+      split_type: splitType,
+      settled,
+      is_reversal: isReversal,
+      reversal_ref: reversalRef,
+      is_salary: isSalary,
     };
 
     return {
-      type,
+      type: isReversal || isSalary ? "income" : type,
       amount: Math.round(amount),
       created_at: createdAt.toISOString(),
       transaction,
@@ -115,6 +137,16 @@ export class TransactionService {
       throw new ValidationError("No transactions provided for import");
     }
     return this.transactionRepo.bulkUpsertByExternalId(userId, transactions);
+  }
+
+  async getExistingExternalIds(userId) {
+    const all = await this.transactionRepo.findInDateRange(userId, null, null, null);
+    const ids = new Set();
+    for (const tx of all || []) {
+      const extId = tx.transaction?.external_id;
+      if (extId) ids.add(String(extId));
+    }
+    return ids;
   }
 }
 

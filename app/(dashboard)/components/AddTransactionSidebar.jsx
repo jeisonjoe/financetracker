@@ -67,6 +67,10 @@ export default function AddTransactionSidebar(props) {
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef(null);
 
+  const [isSplit, setIsSplit] = useState(false);
+  const [splitPerson, setSplitPerson] = useState("");
+  const [splitType, setSplitType] = useState("lent");
+
   const categories = useMemo(() => {
     const filtered = rawCategories.filter((c) => {
       if (type === "income") return c.type === "income" || c.type === "both";
@@ -123,6 +127,10 @@ export default function AddTransactionSidebar(props) {
           ? { key: toWalRaw, name: toWalRaw }
           : toWalRaw;
       setToWallet(toWalVal || {});
+      const meta = transaction.full_transaction || transaction.transaction || {};
+      setIsSplit(Boolean(meta.is_split || transaction.is_split));
+      setSplitPerson(meta.split_person || transaction.split_person || "");
+      setSplitType(meta.split_type || transaction.split_type || (transaction.type === "income" ? "settlement" : "lent"));
     } else {
       setData({
         amount: "",
@@ -131,6 +139,9 @@ export default function AddTransactionSidebar(props) {
         date: new Date(),
       });
       setType(initialType || "expense");
+      setIsSplit(false);
+      setSplitPerson("");
+      setSplitType("lent");
     }
   }, [transaction, initialType]);
 
@@ -225,6 +236,9 @@ export default function AddTransactionSidebar(props) {
         wallet,
         ...(isTransfer ? { to_wallet: toWallet } : {}),
         payee: data.note || (isTransfer ? transferLabel : ""),
+        is_split: isSplit,
+        split_person: isSplit && splitPerson ? splitPerson.trim() : null,
+        split_type: isSplit ? splitType : null,
       },
     };
 
@@ -322,6 +336,42 @@ export default function AddTransactionSidebar(props) {
             onChange={(e) => handleData("note", e.target.value)}
           />
         </div>
+
+        {/* Friend Split & Lending */}
+        {type !== "transfer" && (
+          <div className="flex flex-col gap-2 p-3 bg-surface border border-line-subtle rounded-xl">
+            <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink-secondary">
+              <input
+                type="checkbox"
+                checked={isSplit}
+                onChange={(e) => setIsSplit(e.target.checked)}
+                className="accent-ink-primary cursor-pointer"
+              />
+              <span>Tag as Friend Split / Lending</span>
+            </label>
+
+            {isSplit && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-line-faint">
+                <input
+                  type="text"
+                  placeholder="Friend's Name (e.g. Viswanathan)"
+                  value={splitPerson}
+                  onChange={(e) => setSplitPerson(e.target.value)}
+                  className="w-full text-xs px-3 py-2 bg-surface-elevated border border-line-subtle rounded-lg text-ink-primary placeholder:text-ink-placeholder focus:outline-none"
+                />
+                <select
+                  value={splitType}
+                  onChange={(e) => setSplitType(e.target.value)}
+                  className="w-full text-xs px-2.5 py-2 bg-surface-elevated border border-line-subtle rounded-lg text-ink-primary focus:outline-none"
+                >
+                  <option value="lent">They owe me (Lent)</option>
+                  <option value="settlement">Friend repaid me (Settled)</option>
+                  <option value="borrowed">I owe them (Borrowed)</option>
+                </select>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {type === "transfer" ? (
