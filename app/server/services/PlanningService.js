@@ -603,6 +603,19 @@ export class PlanningService {
       netBalance: totalLent - totalBorrowed,
       contactsCount: debtsByPerson.length,
       byPerson: debtsByPerson,
+      contacts: debtsByPerson.map((p) => ({
+        ...p,
+        name: p.person,
+      })),
+      openDebtsCount: debtsByPerson.filter((p) => p.balance !== 0).length,
+      history: debtsByPerson
+        .flatMap((p) =>
+          (p.transactions || []).map((t) => ({
+            ...t,
+            person: p.person,
+          }))
+        )
+        .sort((a, b) => new Date(b.date) - new Date(a.date)),
     };
 
     return {

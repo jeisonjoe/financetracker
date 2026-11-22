@@ -24,14 +24,35 @@ import Modal from "@/app/components/Modal";
 import DatePicker from "@/app/components/DatePicker";
 
 export default function DebtsSection({ planning, currency }) {
-  const debts = planning?.debtsSummary || {
-    totalLent: 0,
-    totalBorrowed: 0,
-    netBalance: 0,
-    contacts: [],
-    openDebtsCount: 0,
-    history: [],
-  };
+  const debts = useMemo(() => {
+    const raw = planning?.debtsSummary || {};
+    const rawContacts = raw.contacts || raw.byPerson || [];
+    const normalizedContacts = rawContacts.map((c) => ({
+      ...c,
+      name: c.name || c.person || "Unknown",
+    }));
+    return {
+      totalLent: raw.totalLent || 0,
+      totalBorrowed: raw.totalBorrowed || 0,
+      totalSettled: raw.totalSettled || 0,
+      netBalance:
+        raw.netBalance ?? (raw.totalLent || 0) - (raw.totalBorrowed || 0),
+      contacts: normalizedContacts,
+      openDebtsCount:
+        raw.openDebtsCount ??
+        normalizedContacts.filter((c) => c.balance !== 0).length,
+      history:
+        raw.history ||
+        normalizedContacts
+          .flatMap((p) =>
+            (p.transactions || []).map((t) => ({
+              ...t,
+              person: p.name,
+            }))
+          )
+          .sort((a, b) => new Date(b.date) - new Date(a.date)),
+    };
+  }, [planning?.debtsSummary]);
 
   const { recordRepayment } = usePlanningMutations();
   const { data: wallets = [] } = useWalletsQuery();
@@ -238,7 +259,7 @@ export default function DebtsSection({ planning, currency }) {
           </div>
 
           {/* Counterparty Net Balances Visual Chart */}
-          {debts.contacts.some((c) => Math.abs(c.balance) > 0) && (
+          {debts.contacts?.some((c) => Math.abs(c.balance) > 0) && (
             <div className="p-3 bg-surface rounded-xl border border-line-subtle">
               <span className="text-xs text-ink-subtle block mb-2">
                 Net Balance by Contact (Green = Owes You, Red = You Owe)
