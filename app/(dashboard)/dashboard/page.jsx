@@ -16,6 +16,7 @@ import Modal from "@/app/components/Modal";
 import RenderIcon from "@/app/components/RenderIcon";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import CashflowBarChart from "@/app/components/charts/CashflowBarChart";
+import SpendingTrendLineChart from "@/app/components/charts/SpendingTrendLineChart";
 import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 import StreamsWidget from "../components/StreamsWidget";
 import TransactionsWidget from "../components/TransactionsWidget";
@@ -30,9 +31,19 @@ const PERIOD_LABELS = {
   all_time: "All Time",
 };
 
+function getPeriodLabel(period) {
+  if (!period) return "This Month";
+  if (period.startsWith("custom:")) {
+    const [start, end] = period.replace("custom:", "").split("_");
+    return `${start} to ${end}`;
+  }
+  return PERIOD_LABELS[period] || "This Period";
+}
+
 export default function Page() {
   const { period } = useGlobalPeriod();
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [trendChartType, setTrendChartType] = useState("bars"); // "bars" | "cumulative"
   const { data, isLoading } = useAnalytics(period);
   const { data: planning } = usePlanningOverview();
   const { updateGoal, processRecurring } = usePlanningMutations();
@@ -125,7 +136,7 @@ export default function Page() {
     }
   } else if (pace.spent > 0) {
     paceCaption = `Spent ${cFormat(pace.spent, { currency })} in ${
-      PERIOD_LABELS[period]?.toLowerCase() || "this period"
+      getPeriodLabel(period)?.toLowerCase() || "this period"
     }`;
   }
 
@@ -210,7 +221,7 @@ export default function Page() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-surface-elevated/45 border border-line-subtle rounded-2xl p-4 flex flex-col gap-1.5">
           <span className="text-xs text-ink-subtle">
-            Income ({PERIOD_LABELS[period]})
+            Income ({getPeriodLabel(period)})
           </span>
           <div className="flex flex-wrap items-baseline justify-between gap-2 tabular-nums">
             <span className="text-xl font-normal text-green-100">
@@ -226,7 +237,7 @@ export default function Page() {
 
         <div className="bg-surface-elevated/45 border border-line-subtle rounded-2xl p-4 flex flex-col gap-1.5">
           <span className="text-xs text-ink-subtle">
-            Expenses ({PERIOD_LABELS[period]})
+            Expenses ({getPeriodLabel(period)})
           </span>
           <div className="flex flex-wrap items-baseline justify-between gap-2 tabular-nums">
             <span className="text-xl font-normal text-red-100">
@@ -349,15 +360,43 @@ export default function Page() {
                     : "Last 14 days daily activity"}
                 </span>
               </span>
-              <div className="flex items-center gap-3 text-ink-subtle">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-green-100" />
-                  Income
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-ink-secondary" />
-                  Expense
-                </span>
+              <div className="flex items-center gap-2 sm:gap-3 text-ink-subtle">
+                <div className="flex items-center bg-surface border border-line-subtle p-0.5 rounded-full">
+                  <button
+                    type="button"
+                    onClick={() => setTrendChartType("bars")}
+                    className={`px-2 py-0.5 rounded-full text-[10px] cursor-pointer transition-colors ${
+                      trendChartType === "bars"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-subtle hover:text-ink-body"
+                    }`}
+                  >
+                    Daily
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrendChartType("cumulative")}
+                    className={`px-2 py-0.5 rounded-full text-[10px] cursor-pointer transition-colors ${
+                      trendChartType === "cumulative"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-subtle hover:text-ink-body"
+                    }`}
+                  >
+                    Cumulative
+                  </button>
+                </div>
+                {trendChartType === "bars" && (
+                  <div className="hidden sm:flex items-center gap-2.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-100" />
+                      Income
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-accent" />
+                      Expense
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -365,12 +404,18 @@ export default function Page() {
               <div className="h-32 flex items-center justify-center text-xs text-ink-faint rounded-xl bg-surface/60 border border-line-faint">
                 No income or expenses recorded in this window yet.
               </div>
-            ) : (
+            ) : trendChartType === "bars" ? (
               <CashflowBarChart
                 dailyTrend={dailyTrend}
                 currency={currency}
                 height={140}
                 onHoverDay={setHoveredDay}
+              />
+            ) : (
+              <SpendingTrendLineChart
+                dailyTrend={dailyTrend}
+                currency={currency}
+                height={140}
               />
             )}
           </div>
@@ -393,7 +438,7 @@ export default function Page() {
           {categoryBreakdown.length === 0 ? (
             <div className="py-10 text-center flex flex-col gap-1.5 my-auto">
               <span className="text-sm text-ink-subtle">
-                No category spending in {PERIOD_LABELS[period]?.toLowerCase()}
+                No category spending in {getPeriodLabel(period)?.toLowerCase()}
               </span>
               <span className="text-xs text-ink-faint">
                 Click Add Transaction above to log an expense and track category mix.

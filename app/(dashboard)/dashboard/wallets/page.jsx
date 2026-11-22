@@ -14,6 +14,7 @@ import {
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import AddTransactionSidebar from "../../components/AddTransactionSidebar";
+import WalletDistributionChart from "@/app/components/charts/WalletDistributionChart";
 import ActionModal from "@/app/components/ActionModal";
 import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
@@ -301,6 +302,18 @@ export default function Page() {
           </button>
         </div>
       </div>
+
+      {/* Asset Allocation & Balance Distribution Chart */}
+      {!isLoading && combinedWallets.some((w) => (w.balance || 0) > 0) && (
+        <div className="bg-surface-elevated/40 rounded-2xl border border-line-subtle p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-normal text-ink-secondary">
+              Asset Allocation &amp; Balance Share
+            </h3>
+          </div>
+          <WalletDistributionChart wallets={combinedWallets} currency={currency} height={160} />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

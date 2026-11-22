@@ -8,6 +8,7 @@ import AddCategoryPane from "@/app/(dashboard)/components/AddCategoryPane";
 import ProgressRing from "@/app/components/ProgressRing";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import RenderIcon from "@/app/components/RenderIcon";
+import BudgetComparisonChart from "@/app/components/charts/BudgetComparisonChart";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -752,6 +753,18 @@ export default function BudgetsPage() {
             )}
           </div>
 
+          {/* Budget vs Actual Comparison Chart Card */}
+          {breakdown.length > 0 && (
+            <div className="bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-normal text-ink-secondary">
+                  Budget vs. Spent
+                </h2>
+              </div>
+              <BudgetComparisonChart categories={breakdown} currency={currency} height={200} />
+            </div>
+          )}
+
           {/* Top Spending Card */}
           <div className="bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 flex flex-col gap-3.5">
             <div className="flex items-center justify-between gap-2">
@@ -759,7 +772,7 @@ export default function BudgetsPage() {
                 Top Spending
               </h2>
               <span className="text-xs text-ink-subtle">
-                {PERIOD_LABELS[period] || "This Month"}
+                {period.startsWith("custom:") ? "Custom Range" : (PERIOD_LABELS[period] || "This Month")}
               </span>
             </div>
 

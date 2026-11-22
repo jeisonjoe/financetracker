@@ -18,6 +18,7 @@ import {
 } from "@/app/hooks/useFinanceData";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import AddTransactionSidebar from "@/app/(dashboard)/components/AddTransactionSidebar";
+import DebtsBarChart from "@/app/components/charts/DebtsBarChart";
 import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
 import DatePicker from "@/app/components/DatePicker";
@@ -235,6 +236,16 @@ export default function DebtsSection({ planning, currency }) {
               </select>
             </div>
           </div>
+
+          {/* Counterparty Net Balances Visual Chart */}
+          {debts.contacts.some((c) => Math.abs(c.balance) > 0) && (
+            <div className="p-3 bg-surface rounded-xl border border-line-subtle">
+              <span className="text-xs text-ink-subtle block mb-2">
+                Net Balance by Contact (Green = Owes You, Red = You Owe)
+              </span>
+              <DebtsBarChart contacts={debts.contacts} currency={currency} height={140} />
+            </div>
+          )}
 
           {filteredContacts.length === 0 ? (
             <div className="py-12 text-center text-sm text-ink-subtle">

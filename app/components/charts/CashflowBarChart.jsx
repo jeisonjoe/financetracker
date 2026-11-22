@@ -33,8 +33,8 @@ export default function CashflowBarChart({
         {
           label: "Expense",
           data: expenseData,
-          backgroundColor: "rgba(244, 244, 245, 0.7)", // ink-primary
-          hoverBackgroundColor: "#f4f4f5",
+          backgroundColor: "rgba(225, 100, 73, 0.85)", // accent red/orange
+          hoverBackgroundColor: "#e16449",
           borderRadius: 4,
           borderSkipped: false,
           barPercentage: 0.7,
@@ -83,7 +83,7 @@ export default function CashflowBarChart({
           display: true,
           position: "right",
           grid: {
-            color: "rgba(255, 255, 255, 0.04)",
+            color: "rgba(0, 0, 0, 0.05)",
           },
           border: {
             display: false,

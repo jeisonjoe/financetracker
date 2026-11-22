@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
+import { BiChart, BiListUl } from "react-icons/bi";
 import { cFormat } from "@/app/utils/currencyFormat";
 import { useAnalytics } from "@/app/hooks/useFinanceData";
 import { useAuth } from "@/app/contexts/AuthContext";
 import RenderIcon from "@/app/components/RenderIcon";
+import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 
 export default function BudgetWidget({ limit = 6 }) {
+  const [viewMode, setViewMode] = useState("list"); // "list" | "chart"
   const { data, isLoading } = useAnalytics();
   const { user } = useAuth();
   const currency = user?.currency || "INR";
@@ -18,6 +22,34 @@ export default function BudgetWidget({ limit = 6 }) {
         <span className="text-lg text-ink-secondary font-normal">
           Spending Analysis
         </span>
+        {categories.length > 0 && (
+          <div className="flex items-center bg-surface border border-line-subtle p-0.5 rounded-full">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-full text-xs cursor-pointer transition-colors ${
+                viewMode === "list"
+                  ? "bg-tint-active text-ink-primary"
+                  : "text-ink-subtle hover:text-ink-body"
+              }`}
+              title="List View"
+            >
+              <BiListUl size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("chart")}
+              className={`p-1.5 rounded-full text-xs cursor-pointer transition-colors ${
+                viewMode === "chart"
+                  ? "bg-tint-active text-ink-primary"
+                  : "text-ink-subtle hover:text-ink-body"
+              }`}
+              title="Doughnut Chart View"
+            >
+              <BiChart size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-y-auto w-full scrollbar-minimal grow pr-1">
@@ -33,6 +65,14 @@ export default function BudgetWidget({ limit = 6 }) {
         ) : categories.length === 0 ? (
           <div className="text-center text-ink-subtle text-sm py-16">
             No expenses in this period
+          </div>
+        ) : viewMode === "chart" ? (
+          <div className="py-2 flex flex-col items-center justify-center">
+            <CategoryDoughnutChart
+              categories={categories}
+              currency={currency}
+              height={190}
+            />
           </div>
         ) : (
           categories.map((item) => {

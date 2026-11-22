@@ -16,6 +16,21 @@ export class AnalyticsService {
     const year = now.getFullYear();
     const month = now.getMonth();
 
+    if (typeof period === "string" && period.startsWith("custom:")) {
+      const rangeStr = period.slice(7);
+      const [startPart, endPart] = rangeStr.split("_");
+      const start = startPart ? new Date(`${startPart}T00:00:00.000`) : null;
+      const end = endPart ? new Date(`${endPart}T23:59:59.999`) : null;
+      return {
+        start: start && !isNaN(start.getTime()) ? start : null,
+        end: end && !isNaN(end.getTime()) ? end : null,
+        isSalaryCycle: false,
+        isCustom: true,
+        startDate: startPart,
+        endDate: endPart,
+      };
+    }
+
     if (period === "last_month") {
       return {
         start: new Date(year, month - 1, 1, 0, 0, 0, 0),
@@ -340,14 +355,27 @@ export class AnalyticsService {
         ? Math.round(((currentSummary.income - currentSummary.expense) / currentSummary.income) * 100)
         : 0;
 
-    // 14-day daily cashflow trend
+    // Daily cashflow trend
+    const isCustom = bounds.isCustom;
     const trendEndDate =
-      period === "last_month" && end
+      (period === "last_month" || isCustom) && end
         ? new Date(end.getFullYear(), end.getMonth(), end.getDate())
         : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let trendDays = 14;
+    if (isCustom && start && end) {
+      const diffMs = end.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays > 0 && diffDays <= 31) {
+        trendDays = diffDays;
+      } else if (diffDays > 31) {
+        trendDays = 30;
+      }
+    }
+
     const dailyMap = new Map();
     const trendKeys = [];
-    for (let i = 13; i >= 0; i -= 1) {
+    for (let i = trendDays - 1; i >= 0; i -= 1) {
       const d = new Date(trendEndDate);
       d.setDate(trendEndDate.getDate() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(

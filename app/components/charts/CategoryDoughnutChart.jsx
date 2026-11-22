@@ -37,7 +37,7 @@ export default function CategoryDoughnutChart({
           {
             data,
             backgroundColor: CHART_PALETTE.slice(0, labels.length),
-            borderColor: "#18181b", // matches surface-elevated
+            borderColor: "#ffffff", // clean light mode slice separator
             borderWidth: 2,
             hoverOffset: 4,
           },
