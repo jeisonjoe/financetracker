@@ -107,3 +107,32 @@ export const PlanningApi = {
   deleteRecurring: (id) => http.delete(`/api/planning/recurring/${id}`),
 };
 
+export const AiApi = {
+  getStatus: () => http.get("/api/ai/status"),
+  testConnection: ({ provider, apiKey, model }) =>
+    http.post("/api/ai/status", { provider, apiKey, model }),
+  generateInsights: ({ period = "this_month", provider, apiKey, model }) =>
+    http.post("/api/ai/insights", { period, provider, apiKey, model }),
+  parseStatement: async ({ file, password, wallet, provider, apiKey, model, mode }) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (password) formData.append("password", password);
+    if (wallet) formData.append("wallet", wallet);
+    if (provider) formData.append("provider", provider);
+    if (model) formData.append("model", model);
+    if (apiKey) formData.append("apiKey", apiKey);
+    if (mode) formData.append("mode", mode);
+
+    const response = await fetch("/api/ai/parse-statement", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error || `Request failed (${response.status})`);
+    }
+    return payload;
+  },
+};
+

@@ -5,6 +5,7 @@ import { CategoryService } from "./CategoryService.js";
 import { WalletService } from "./WalletService.js";
 import { AnalyticsService } from "./AnalyticsService.js";
 import { PlanningService } from "./PlanningService.js";
+import { AiService } from "./AiService.js";
 
 /**
  * Dependency injection container assembling services for the active DB_PROVIDER.
@@ -31,6 +32,7 @@ export class ServiceContainer {
         repos.transactionRepo,
         repos.categoryRepo
       ),
+      aiService: new AiService(),
     };
   }
 }
