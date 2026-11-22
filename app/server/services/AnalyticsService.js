@@ -431,35 +431,96 @@ export class AnalyticsService {
 
     const availableBalance = totalOpeningBalance + allTimeSummary.balance;
 
-    // Category breakdown
-    const budgetLookup = new Map(
-      registeredCategories.map((c) => [c.name, { id: c.id, monthlyBudget: c.monthlyBudget, icon: c.icon }])
+    // Category & Subcategory breakdown
+    const parentCategories = registeredCategories.filter((c) => !c.parentId);
+    const subcategoriesByParentId = new Map();
+    for (const c of registeredCategories) {
+      if (c.parentId) {
+        if (!subcategoriesByParentId.has(c.parentId)) {
+          subcategoriesByParentId.set(c.parentId, []);
+        }
+        subcategoriesByParentId.get(c.parentId).push(c);
+      }
+    }
+
+    const parentLookup = new Map(
+      parentCategories.map((c) => [c.name, c])
     );
+    const parentLookupLower = new Map(
+      parentCategories.map((c) => [c.name.toLowerCase(), c])
+    );
+
     const categoryTotals = new Map();
+    const subcategoryTotals = new Map();
     let totalExpense = 0;
 
     for (const tx of periodTransactions) {
       if (tx.type !== "expense") continue;
       const catName = tx.category?.name || "Uncategorized";
+      const subName = tx.subcategory?.name || tx.meta?.subcategory?.name || tx.meta?.subcategory || null;
+
       categoryTotals.set(catName, (categoryTotals.get(catName) || 0) + tx.amount);
       totalExpense += tx.amount;
+
+      if (subName) {
+        const key = `${catName}:::${subName}`;
+        subcategoryTotals.set(key, (subcategoryTotals.get(key) || 0) + tx.amount);
+      }
     }
 
     const categoryBreakdown = Array.from(categoryTotals.entries())
       .map(([name, spent]) => {
-        const meta = budgetLookup.get(name);
-        const budget = meta?.monthlyBudget || 0;
+        const parent = parentLookup.get(name) || parentLookupLower.get(name.toLowerCase());
+        const budget = parent?.monthlyBudget || 0;
         const sharePercent = totalExpense > 0 ? Math.round((spent / totalExpense) * 100) : 0;
         const budgetPercent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : sharePercent;
+
+        // Subcategories breakdown under this parent
+        const registeredSubs = parent ? subcategoriesByParentId.get(parent.id) || [] : [];
+        const subMap = new Map();
+
+        // 1. Registered subcategories
+        for (const sub of registeredSubs) {
+          const subSpent = subcategoryTotals.get(`${name}:::${sub.name}`) || 0;
+          const subBudget = sub.monthlyBudget || 0;
+          const subBudgetPct = subBudget > 0 ? Math.min(100, Math.round((subSpent / subBudget) * 100)) : (spent > 0 ? Math.round((subSpent / spent) * 100) : 0);
+          subMap.set(sub.name, {
+            id: sub.id,
+            name: sub.name,
+            spent: subSpent,
+            budget: subBudget,
+            budgetPercent: subBudgetPct,
+            overBudget: subBudget > 0 && subSpent > subBudget,
+          });
+        }
+
+        // 2. Any additional subcategories seen in transactions
+        for (const [key, subSpent] of subcategoryTotals.entries()) {
+          const [cat, subName] = key.split(":::");
+          if (cat === name && !subMap.has(subName)) {
+            subMap.set(subName, {
+              id: subName,
+              name: subName,
+              spent: subSpent,
+              budget: 0,
+              budgetPercent: spent > 0 ? Math.round((subSpent / spent) * 100) : 0,
+              overBudget: false,
+            });
+          }
+        }
+
+        const subcategories = Array.from(subMap.values()).sort((a, b) => b.spent - a.spent);
+
         return {
-          id: meta?.id || name,
+          id: parent?.id || name,
           name,
           spent,
           budget,
-          icon: meta?.icon || null,
+          icon: parent?.icon || null,
           sharePercent,
           budgetPercent,
           overBudget: budget > 0 && spent > budget,
+          subcategories,
         };
       })
       .sort((a, b) => b.spent - a.spent);

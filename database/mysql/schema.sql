@@ -35,12 +35,14 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS categories (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_id CHAR(36) NULL,
+  parent_id BIGINT UNSIGNED NULL DEFAULT NULL,
   name VARCHAR(150) NOT NULL,
   type VARCHAR(30) NOT NULL DEFAULT 'expense',
   icon JSON NULL,
   monthly_budget BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_categories_user (user_id)
+  INDEX idx_categories_user (user_id),
+  INDEX idx_categories_parent (parent_id)
 );
 
 CREATE TABLE IF NOT EXISTS wallets (

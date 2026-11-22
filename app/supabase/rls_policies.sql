@@ -25,6 +25,10 @@ USING (auth.uid() = user_id);
 ALTER TABLE IF EXISTS wallets
   ADD COLUMN IF NOT EXISTS opening_balance BIGINT NOT NULL DEFAULT 0;
 
+-- Category subcategory hierarchy support
+ALTER TABLE IF EXISTS categories
+  ADD COLUMN IF NOT EXISTS parent_id BIGINT NULL DEFAULT NULL;
+
 -- Fund Goals table & RLS
 CREATE TABLE IF NOT EXISTS fund_goals (
   id BIGSERIAL PRIMARY KEY,

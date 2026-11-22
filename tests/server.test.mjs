@@ -26,6 +26,7 @@ import { CategoryService } from "../app/server/services/CategoryService.js";
 import { WalletService } from "../app/server/services/WalletService.js";
 import { PlanningService } from "../app/server/services/PlanningService.js";
 import { AiService, extractJsonFromText, parseStatementDate } from "../app/server/services/AiService.js";
+import { MerchantRuleService } from "../app/server/services/MerchantRuleService.js";
 import { GooglePayParser } from "../app/lib/import/GooglePayParser.js";
 
 test("DatabaseConfig switches between mysql and supabase and rejects invalid values", () => {
@@ -746,5 +747,164 @@ test("AnalyticsService nets reversals, tracks friend splits, computes micro-spen
   assert.equal(salaryBounds.payday, 29);
   assert.equal(salaryBounds.salaryAmount, 60000);
 });
+
+test("Subcategory hierarchy, individual subcategory budgets, and transaction categorization", async () => {
+  // 1. CategoryEntity parent_id serialization
+  const parentCat = new CategoryEntity({
+    id: 1,
+    name: "Food & Dining",
+    type: "expense",
+    monthly_budget: 15000,
+  });
+  const subCat = new CategoryEntity({
+    id: 2,
+    parent_id: 1,
+    name: "Breakfast",
+    type: "expense",
+    monthly_budget: 4000,
+  });
+  assert.equal(parentCat.parentId, null);
+  assert.equal(parentCat.toJSON().parent_id, null);
+  assert.equal(subCat.parentId, "1");
+  assert.equal(subCat.toJSON().parent_id, "1");
+
+  // 2. CategoryService create subcategory
+  let createdCategoryPayload = null;
+  const catService = new CategoryService({
+    async create(userId, payload) {
+      createdCategoryPayload = payload;
+      return new CategoryEntity({ id: 99, ...payload, user_id: userId });
+    },
+    async seedDefaultsIfEmpty(userId, defaults) {
+      return defaults.map((d, i) => new CategoryEntity({ id: i + 1, ...d }));
+    },
+  });
+
+  const created = await catService.create("u1", {
+    name: "Petrol",
+    parent_id: "10",
+    monthly_budget: 5000,
+  });
+  assert.equal(created.name, "Petrol");
+  assert.equal(created.parent_id, "10");
+  assert.equal(createdCategoryPayload.parentId, "10");
+  assert.equal(createdCategoryPayload.monthlyBudget, 5000);
+
+  // 3. TransactionService normalizes subcategory
+  let savedTx = null;
+  const txService = new TransactionService({
+    async create(userId, payload) {
+      savedTx = payload;
+      return new TransactionEntity({ id: 101, user_id: userId, ...payload });
+    },
+  });
+
+  const tx = await txService.create("u1", {
+    amount: 250,
+    type: "expense",
+    category: "Food & Dining",
+    subcategory: "Breakfast",
+    note: "Idli and Tea",
+    wallet: "Cash",
+  });
+  assert.equal(tx.category, "Food & Dining");
+  assert.equal(tx.subcategory, "Breakfast");
+  assert.equal(savedTx.transaction.subcategory.name, "Breakfast");
+
+  // 4. AnalyticsService computes subcategory breakdowns and individual limits
+  const registeredCategories = [
+    new CategoryEntity({ id: 1, name: "Food & Dining", monthly_budget: 10000 }),
+    new CategoryEntity({ id: 2, parent_id: 1, name: "Breakfast", monthly_budget: 3000 }),
+    new CategoryEntity({ id: 3, parent_id: 1, name: "Dinner", monthly_budget: 5000 }),
+  ];
+
+  const periodTxs = [
+    new TransactionEntity({
+      id: 1,
+      type: "expense",
+      amount: 1500,
+      createdAt: new Date().toISOString(),
+      transaction: {
+        category: { name: "Food & Dining" },
+        subcategory: { name: "Breakfast" },
+      },
+    }),
+    new TransactionEntity({
+      id: 2,
+      type: "expense",
+      amount: 2000,
+      createdAt: new Date().toISOString(),
+      transaction: {
+        category: { name: "Food & Dining" },
+        subcategory: { name: "Dinner" },
+      },
+    }),
+    new TransactionEntity({
+      id: 3,
+      type: "expense",
+      amount: 500,
+      createdAt: new Date().toISOString(),
+      transaction: {
+        category: { name: "Food & Dining" },
+      },
+    }),
+  ];
+
+  const analytics = new AnalyticsService(
+    {
+      async findInDateRange() {
+        return periodTxs;
+      },
+    },
+    {
+      async findAllForUser() {
+        return registeredCategories;
+      },
+    },
+    {
+      async findAllForUser() {
+        return [];
+      },
+    }
+  );
+
+  const overview = await analytics.getDashboardOverview("u1", "this_month");
+  const foodBreakdown = overview.categoryBreakdown.find((c) => c.name === "Food & Dining");
+  assert.ok(foodBreakdown);
+  assert.equal(foodBreakdown.spent, 4000); // 1500 + 2000 + 500
+  assert.equal(foodBreakdown.subcategories.length, 2);
+
+  const bfastSub = foodBreakdown.subcategories.find((s) => s.name === "Breakfast");
+  assert.equal(bfastSub.spent, 1500);
+  assert.equal(bfastSub.budget, 3000);
+  assert.equal(bfastSub.overBudget, false);
+
+  const dinnerSub = foodBreakdown.subcategories.find((s) => s.name === "Dinner");
+  assert.equal(dinnerSub.spent, 2000);
+  assert.equal(dinnerSub.budget, 5000);
+
+  // 5. MerchantRuleService subcategory mapping
+  const ruleMatch = MerchantRuleService.categorizeTransaction({
+    rawNarration: "UPI-SELVA KUMAR K-SELVA@OKAXIS-PAYMENT",
+    amount: 120,
+  });
+  assert.equal(ruleMatch.category, "Food & Dining");
+  assert.equal(ruleMatch.subcategory, "Breakfast");
+
+  const trainMatch = MerchantRuleService.categorizeTransaction({
+    rawNarration: "IRCTC TRAIN TICKET BOOKING",
+    amount: 450,
+  });
+  assert.equal(trainMatch.category, "Travel");
+  assert.equal(trainMatch.subcategory, "Train");
+
+  const petrolMatch = MerchantRuleService.categorizeTransaction({
+    rawNarration: "INDIAN OIL PETROL PUMP CHENNAI",
+    amount: 500,
+  });
+  assert.equal(petrolMatch.category, "Travel");
+  assert.equal(petrolMatch.subcategory, "Petrol & Fuel");
+});
+
 
 

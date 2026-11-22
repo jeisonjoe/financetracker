@@ -32,89 +32,111 @@ const DEFAULT_MERCHANT_RULES = [
   {
     pattern: /SELVA\s+KUMAR\s+K/i,
     category: "Food & Dining",
+    subcategory: "Breakfast",
     payee: "Selva Kumar K",
     defaultNote: "Breakfast / Tea",
   },
   {
     pattern: /ZUBAITHA\s+RESTAURANT/i,
     category: "Food & Dining",
+    subcategory: "Dinner",
     payee: "Zubaitha Restaurant",
     defaultNote: "Dinner / Dining",
   },
   {
     pattern: /CHALLENGE\s+HOTEL/i,
     category: "Food & Dining",
+    subcategory: "Lunch",
     payee: "Challenge Hotel",
     defaultNote: "Dining / Meals",
   },
   {
     pattern: /SENTHUR\s+MURUGAN\s+STOR/i,
     category: "Groceries",
+    subcategory: "Fresh Produce",
     payee: "Senthur Murugan Stores",
     defaultNote: "Daily Provisions",
   },
   {
     pattern: /LOUISE\s+KALA\s+M/i,
     category: "Food & Dining",
+    subcategory: "Cafes & Fast Food",
     payee: "Louise Kala M",
     defaultNote: "Food & Refreshments",
   },
   {
     pattern: /CUMTA|CHENNAI\s+METRO|CMRL/i,
     category: "Travel",
+    subcategory: "Bus & Transit",
     payee: "CUMTA Metro",
     defaultNote: "Metro Commute",
   },
   {
     pattern: /IRCTC|INDIAN\s+RAIL/i,
     category: "Travel",
+    subcategory: "Train",
     payee: "IRCTC",
     defaultNote: "Train Travel",
   },
   {
     pattern: /UBER|OLA\s+CABS|RAPIDO/i,
     category: "Travel",
+    subcategory: "Taxi & Cab",
     defaultNote: "Cab / Auto Ride",
   },
   {
     pattern: /AIRTEL|JIO|VODAFONE|IDEA|BSNL/i,
     category: "Bills & Utilities",
+    subcategory: "Mobile & Internet",
     defaultNote: "Mobile / Broadband",
   },
   {
     pattern: /ELECTRICITY|TNEB|BESCOM|WATER\s+BOARD/i,
     category: "Bills & Utilities",
+    subcategory: "Electricity",
     defaultNote: "Utility Bill",
   },
   {
     pattern: /SWIGGY|ZOMATO|ZEPTO|BLINKIT|INSTAMART/i,
     category: "Food & Dining",
+    subcategory: "Cafes & Fast Food",
     defaultNote: "Food Delivery / Quick Commerce",
   },
   {
     pattern: /AMAZON|FLIPKART|MYNTRA|AJIO|MEESHO|DRESS|CLOTHES?|CLOTHING|SHIRT|PANTS?|SHORTS|SHOES|CHURIDAR|\bCHUR\b/i,
     category: "Shopping",
+    subcategory: "Clothing",
     defaultNote: "Online Shopping",
   },
   {
     pattern: /APOLLO|PHARMACY|MEDPLUS|MEDICAL|CLINIC|HOSPITAL/i,
     category: "Health",
+    subcategory: "Medicines & Pharmacy",
     defaultNote: "Medical & Health",
   },
   {
     pattern: /PVR|INOX|CINEMAS?|BOOKMYSHOW|NETFLIX|SPOTIFY|HOTSTAR|YOUTUBE|PRIME\s*VIDEO|\bMOVI\b|MOVIE/i,
     category: "Entertainment",
+    subcategory: "Streaming & OTT",
     defaultNote: "Entertainment & Streaming",
   },
   {
     pattern: /ZERODHA|GROWW|UPSTOX|MUTUAL\s*FUND|SIP|INDMONEY|KFINTECH|CAMS|NPS|PPF/i,
     category: "Investment",
+    subcategory: "Mutual Funds & SIP",
     defaultNote: "Investment & Wealth",
   },
   {
     pattern: /HOUSE\s*RENT|FLAT\s*RENT|\bRENT\b|\bHOUS\b|MAINTENANCE\s*FEE|SOCIETY\s*MAINT/i,
-    category: "Housing",
+    category: "Bills & Utilities",
+    subcategory: "House Rent",
     defaultNote: "Rent & Housing",
+  },
+  {
+    pattern: /PETROL|DIESEL|FUEL|HPCL|BPCL|IOCL|INDIAN\s*OIL|SHELL\s*PETROL/i,
+    category: "Travel",
+    subcategory: "Petrol & Fuel",
+    defaultNote: "Fuel / Petrol",
   },
   {
     pattern: /DINNER|DINNET|\bDINN\b|\bDI\b|LUNCH|BREAKFAST|FOOD|MEAL|TIFFIN|BIRIYANI|BIRAYANI|BAJJI|DOSA|IDLY|IDLI|CHICKEN|CHICKRN|\bCHIC\b|MUTTON|FISH|EATERY|SWEETS?|SNACKS?|TEA|COFFEE|BAKERY|BAKES|CAFE|RESTAURANT|HOTEL|JUICE|ICE\s*CREAM|PAROTTA|ROTI|NOODLES|PIZZA|BURGER|SHAWARMA|\bCHIP\b|\bLAYS\b|\bSUNDA\b|CATERING|BOTTLE|WARER\s*BOTTLE|WATER\s*BOTTLE/i,
@@ -378,6 +400,7 @@ export class MerchantRuleService {
         return {
           ...cleaned,
           category: rule.category || (cleaned.isSalary ? "Salary" : "Uncategorized"),
+          subcategory: rule.subcategory || null,
           type: rule.type || cleaned.type,
           note: rule.note || cleaned.note,
           payee: rule.payee || cleaned.payee,
@@ -396,6 +419,7 @@ export class MerchantRuleService {
         return {
           ...cleaned,
           category: resolvedCategory,
+          subcategory: rule.subcategory || null,
           type: rule.type || cleaned.type,
           note: rule.defaultNote || cleaned.note,
           payee: rule.payee || cleaned.payee,
@@ -415,6 +439,7 @@ export class MerchantRuleService {
     return {
       ...cleaned,
       category: fallbackCategory,
+      subcategory: null,
       isMicroSpend: Number(row.amount) <= 200,
     };
   }

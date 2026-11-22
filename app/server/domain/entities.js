@@ -71,6 +71,11 @@ export class TransactionEntity {
     const normalizedType =
       row.type === "income" || row.type === "transfer" ? row.type : "expense";
 
+    const subcategoryName =
+      typeof meta.subcategory === "string"
+        ? meta.subcategory
+        : meta.subcategory?.name || meta.sub_category || null;
+
     this.id = row.id !== undefined && row.id !== null ? String(row.id) : null;
     this.userId = row.user_id ? String(row.user_id) : null;
     this.type = normalizedType;
@@ -84,6 +89,11 @@ export class TransactionEntity {
       typeof meta.category === "object" && meta.category !== null
         ? { key: meta.category.key || categoryName, name: categoryName }
         : { key: categoryName, name: categoryName };
+    this.subcategory = subcategoryName
+      ? typeof meta.subcategory === "object" && meta.subcategory !== null
+        ? { key: meta.subcategory.key || subcategoryName, name: subcategoryName }
+        : { key: subcategoryName, name: subcategoryName }
+      : null;
     this.wallet =
       typeof meta.wallet === "object" && meta.wallet !== null
         ? { key: meta.wallet.key || walletName, name: walletName }
@@ -109,6 +119,8 @@ export class TransactionEntity {
       external_id: this.externalId,
       category: this.category.name,
       category_obj: this.category,
+      subcategory: this.subcategory ? this.subcategory.name : null,
+      subcategory_obj: this.subcategory,
       wallet: this.wallet.name,
       wallet_obj: this.wallet,
       to_wallet: this.toWallet ? this.toWallet.name : null,
@@ -119,6 +131,7 @@ export class TransactionEntity {
         payee: this.payee,
         time: this.time,
         category: this.category,
+        ...(this.subcategory ? { subcategory: this.subcategory } : {}),
         wallet: this.wallet,
         ...(this.toWallet ? { to_wallet: this.toWallet } : {}),
         ...(this.externalId ? { external_id: this.externalId } : {}),
@@ -134,6 +147,11 @@ export class CategoryEntity {
   constructor(row) {
     this.id = row.id !== undefined && row.id !== null ? String(row.id) : null;
     this.userId = row.user_id ? String(row.user_id) : null;
+    const rawParentId = row.parent_id ?? row.parentId;
+    this.parentId =
+      rawParentId !== undefined && rawParentId !== null && rawParentId !== ""
+        ? String(rawParentId)
+        : null;
     this.name = row.name || "";
     this.type = row.type || "expense";
     this.icon = parseJsonColumn(row.icon, null);
@@ -147,6 +165,7 @@ export class CategoryEntity {
     return {
       id: this.id,
       user_id: this.userId,
+      parent_id: this.parentId,
       name: this.name,
       type: this.type,
       icon: this.icon,

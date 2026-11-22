@@ -103,6 +103,17 @@ export class MySqlSchema {
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
+    // 6. Add parent_id to categories for subcategory hierarchy if missing
+    const catCols = await MySqlClient.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'parent_id'`
+    );
+    if (catCols.length === 0) {
+      await MySqlClient.execute(
+        "ALTER TABLE categories ADD COLUMN parent_id BIGINT UNSIGNED NULL DEFAULT NULL AFTER user_id, ADD INDEX idx_categories_parent (parent_id)"
+      );
+    }
   }
 }
 

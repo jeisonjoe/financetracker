@@ -81,12 +81,21 @@ export class TransactionService {
           body.category ||
           (isReversal ? "Refund / Reversal" : isSalary ? "Salary" : "Uncategorized");
 
+    const rawSubcategory = rawMeta.subcategory ?? body.subcategory ?? null;
+    const subcategoryName =
+      typeof rawSubcategory === "string"
+        ? rawSubcategory
+        : rawSubcategory?.name || null;
+
     const transaction = {
       ...rawMeta,
       note: rawNote || cleaned.note,
       payee: rawPayee ? MerchantRuleService.titleCase(rawPayee) : cleaned.payee,
       time: rawMeta.time ?? body.time ?? "",
       category: { key: categoryName, name: categoryName },
+      ...(subcategoryName
+        ? { subcategory: { key: subcategoryName, name: subcategoryName } }
+        : {}),
       wallet: { key: walletName, name: walletName },
       is_split: isSplit,
       split_person: splitPerson ? MerchantRuleService.titleCase(splitPerson) : null,

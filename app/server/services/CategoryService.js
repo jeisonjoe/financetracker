@@ -1,16 +1,66 @@
 import { ValidationError } from "../domain/errors.js";
 
 const DEFAULT_CATEGORIES = [
-  { name: "Food & Dining", type: "expense", icon: { name: "BiRestaurant" } },
-  { name: "Shopping", type: "expense", icon: { name: "BiShoppingBag" } },
-  { name: "Travel", type: "expense", icon: { name: "BiCar" } },
-  { name: "Bills & Utilities", type: "expense", icon: { name: "BiReceipt" } },
-  { name: "Groceries", type: "expense", icon: { name: "BiCart" } },
-  { name: "Entertainment", type: "expense", icon: { name: "BiMoviePlay" } },
-  { name: "Health", type: "expense", icon: { name: "BiPlusMedical" } },
-  { name: "Investment", type: "expense", icon: { name: "BiTrendingUp" } },
-  { name: "Transfer", type: "both", icon: { name: "BiTransfer" } },
-  { name: "Salary", type: "income", icon: { name: "BiWallet" } },
+  {
+    name: "Food & Dining",
+    type: "expense",
+    icon: { name: "BiRestaurant" },
+    subcategories: ["Breakfast", "Lunch", "Dinner", "Cafes & Fast Food", "Groceries & Snacks"],
+  },
+  {
+    name: "Travel",
+    type: "expense",
+    icon: { name: "BiCar" },
+    subcategories: ["Petrol & Fuel", "Bus & Transit", "Train", "Flight", "Taxi & Cab"],
+  },
+  {
+    name: "Bills & Utilities",
+    type: "expense",
+    icon: { name: "BiReceipt" },
+    subcategories: ["Electricity", "Water", "Mobile & Internet", "House Rent", "Piped Gas"],
+  },
+  {
+    name: "Shopping",
+    type: "expense",
+    icon: { name: "BiShoppingBag" },
+    subcategories: ["Clothing", "Electronics", "Home & Kitchen", "Personal Care"],
+  },
+  {
+    name: "Groceries",
+    type: "expense",
+    icon: { name: "BiCart" },
+    subcategories: ["Fresh Produce", "Dairy & Bakery", "Packaged Food", "Household Supplies"],
+  },
+  {
+    name: "Entertainment",
+    type: "expense",
+    icon: { name: "BiMoviePlay" },
+    subcategories: ["Movies & Events", "Streaming & OTT", "Gaming", "Outings & Hobbies"],
+  },
+  {
+    name: "Health",
+    type: "expense",
+    icon: { name: "BiPlusMedical" },
+    subcategories: ["Medicines & Pharmacy", "Doctor & Hospital", "Fitness & Gym", "Diagnostics & Lab"],
+  },
+  {
+    name: "Investment",
+    type: "expense",
+    icon: { name: "BiTrendingUp" },
+    subcategories: ["Mutual Funds & SIP", "Stocks & Equity", "Fixed Deposits", "Gold & Sovereign Bonds"],
+  },
+  {
+    name: "Salary",
+    type: "income",
+    icon: { name: "BiWallet" },
+    subcategories: ["Monthly Salary", "Bonus & Ex-Gratia", "Freelance & Consulting", "Interest & Dividends"],
+  },
+  {
+    name: "Transfer",
+    type: "both",
+    icon: { name: "BiTransfer" },
+    subcategories: ["Self Transfer", "Account Deposit", "Wallet Top-Up"],
+  },
 ];
 
 /**
@@ -29,12 +79,14 @@ export class CategoryService {
     return categories.map((cat) => cat.toJSON());
   }
 
-  async create(userId, { name, type = "expense", icon = null, monthly_budget = 0 }) {
+  async create(userId, { name, parent_id = null, parentId = null, type = "expense", icon = null, monthly_budget = 0 }) {
     if (!name || !String(name).trim()) {
       throw new ValidationError("Category name is required");
     }
+    const resolvedParentId = parent_id ?? parentId ?? null;
     const created = await this.categoryRepo.create(userId, {
       name: String(name),
+      parentId: resolvedParentId,
       type,
       icon,
       monthlyBudget: monthly_budget,
@@ -46,6 +98,7 @@ export class CategoryService {
     if (!id) throw new ValidationError("Category ID is required");
     const updated = await this.categoryRepo.update(id, userId, {
       name: payload.name,
+      parentId: payload.parent_id !== undefined ? payload.parent_id : payload.parentId,
       type: payload.type,
       icon: payload.icon,
       monthlyBudget: payload.monthly_budget ?? payload.monthlyBudget,
