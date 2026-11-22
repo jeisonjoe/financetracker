@@ -12,8 +12,8 @@ import {
   useWalletsQuery,
 } from "@/app/hooks/useFinanceData";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import AddTransactionSidebar from "../../components/AddTransactionSidebar";
-import PeriodSelector from "@/app/components/PeriodSelector";
 import ActionModal from "@/app/components/ActionModal";
 import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
@@ -35,7 +35,7 @@ const EMPTY_WALLET_FORM = {
 };
 
 export default function Page() {
-  const [period, setPeriod] = useState("this_month");
+  const { period } = useGlobalPeriod();
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(EMPTY_WALLET_FORM);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -278,8 +278,6 @@ export default function Page() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <PeriodSelector value={period} onChange={setPeriod} />
-
           {combinedWallets.length >= 2 && (
             <button
               type="button"

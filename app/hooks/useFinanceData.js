@@ -14,6 +14,7 @@ import {
   TransactionApi,
   WalletApi,
 } from "@/app/services/ApiClient";
+import { usePeriodStore } from "@/app/store/PeriodStore";
 
 export const FINANCE_QUERY_KEYS = {
   analytics: (period) => ["analytics", period],
@@ -24,10 +25,12 @@ export const FINANCE_QUERY_KEYS = {
   rules: ["rules"],
 };
 
-export function useAnalytics(period = "this_month") {
+export function useAnalytics(overridePeriod) {
+  const globalPeriod = usePeriodStore((state) => state.period);
+  const activePeriod = overridePeriod || globalPeriod || "this_month";
   return useQuery({
-    queryKey: FINANCE_QUERY_KEYS.analytics(period),
-    queryFn: () => AnalyticsApi.getOverview(period),
+    queryKey: FINANCE_QUERY_KEYS.analytics(activePeriod),
+    queryFn: () => AnalyticsApi.getOverview(activePeriod),
   });
 }
 

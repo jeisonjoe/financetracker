@@ -13,8 +13,8 @@ import {
 import { useAuth } from "@/app/contexts/AuthContext";
 import AnimatedNumber from "@/app/components/AnimatedNumber";
 import Modal from "@/app/components/Modal";
-import PeriodSelector from "@/app/components/PeriodSelector";
 import RenderIcon from "@/app/components/RenderIcon";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import CashflowBarChart from "@/app/components/charts/CashflowBarChart";
 import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 import StreamsWidget from "../components/StreamsWidget";
@@ -31,7 +31,7 @@ const PERIOD_LABELS = {
 };
 
 export default function Page() {
-  const [period, setPeriod] = useState("this_month");
+  const { period } = useGlobalPeriod();
   const [hoveredDay, setHoveredDay] = useState(null);
   const { data, isLoading } = useAnalytics(period);
   const { data: planning } = usePlanningOverview();
@@ -203,7 +203,6 @@ export default function Page() {
               {overBudgetCount === 1 ? "category over cap" : "categories over cap"}
             </Link>
           )}
-          <PeriodSelector value={period} onChange={setPeriod} />
         </div>
       </div>
 

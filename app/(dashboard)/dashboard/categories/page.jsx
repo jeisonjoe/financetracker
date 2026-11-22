@@ -9,9 +9,9 @@ import ActionModal from "@/app/components/ActionModal";
 import Modal from "@/app/components/Modal";
 import Dropdown from "@/app/components/Dropdown";
 import LoadingAnim from "@/app/components/LoadingAnim";
-import PeriodSelector from "@/app/components/PeriodSelector";
 import RenderIcon from "@/app/components/RenderIcon";
 import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   useAnalytics,
@@ -39,7 +39,7 @@ export default function CategoriesPage() {
   const currency = user?.currency || "INR";
   const { open } = useRhsSidebarStore();
 
-  const [period, setPeriod] = useState("this_month");
+  const { period } = useGlobalPeriod();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -446,7 +446,6 @@ export default function CategoriesPage() {
             <h2 className="text-base font-normal text-ink-secondary">
               Spending Share
             </h2>
-            <PeriodSelector value={period} onChange={setPeriod} />
           </div>
 
           {breakdown.length === 0 ? (

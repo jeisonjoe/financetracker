@@ -8,12 +8,15 @@ import AddTransactionSidebar from "./AddTransactionSidebar";
 import { nav, navBottom } from "@/app/utils/navItems";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import { usePlanningOverview } from "@/app/hooks/useFinanceData";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
+import PeriodSelector from "@/app/components/PeriodSelector";
 import RhsSidebar from "@/app/components/RhsSidebar";
 
 export default function Header({ onOpenMobileNav }) {
   const { open } = useRhsSidebarStore();
   const pathname = usePathname();
   const { data: planning } = usePlanningOverview();
+  const { period, setPeriod } = useGlobalPeriod();
 
   const navItems = [...nav, ...navBottom];
   const currentPath = navItems.find((item) => item.url === pathname);
@@ -48,7 +51,9 @@ export default function Header({ onOpenMobileNav }) {
           </h2>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <PeriodSelector value={period} onChange={setPeriod} />
+
           {attentionCount > 0 && (
             <Link
               href="/dashboard/planning?tab=recurring"

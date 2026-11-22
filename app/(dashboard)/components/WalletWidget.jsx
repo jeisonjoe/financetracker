@@ -1,14 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { cFormat } from "@/app/utils/currencyFormat";
 import { useAnalytics } from "@/app/hooks/useFinanceData";
 import { useAuth } from "@/app/contexts/AuthContext";
-import PeriodSelector from "@/app/components/PeriodSelector";
 
 export default function WalletWidget() {
-  const [period, setPeriod] = useState("this_month");
-  const { data, isLoading } = useAnalytics(period);
+  const { data, isLoading } = useAnalytics();
   const { user } = useAuth();
   const currency = user?.currency || "INR";
 
@@ -18,7 +15,6 @@ export default function WalletWidget() {
     <div className="flex flex-col gap-3 bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 h-full min-h-[380px]">
       <div className="flex justify-between items-center gap-2">
         <span className="text-lg text-ink-secondary font-normal">My Wallets</span>
-        <PeriodSelector value={period} onChange={setPeriod} />
       </div>
 
       <div className="overflow-y-auto scrollbar-minimal grow pr-1">

@@ -5,10 +5,10 @@ import Link from "next/link";
 import { BiEdit, BiPlus, BiSearch, BiSliderAlt, BiTrendingUp } from "react-icons/bi";
 import { toast } from "sonner";
 import AddCategoryPane from "@/app/(dashboard)/components/AddCategoryPane";
-import PeriodSelector from "@/app/components/PeriodSelector";
 import ProgressRing from "@/app/components/ProgressRing";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import RenderIcon from "@/app/components/RenderIcon";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   useAnalytics,
@@ -44,7 +44,7 @@ export default function BudgetsPage() {
   const symbol = getCurrencySymbol(currency);
   const { open } = useRhsSidebarStore();
 
-  const [period, setPeriod] = useState("this_month");
+  const { period } = useGlobalPeriod();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [draftBudgets, setDraftBudgets] = useState({});
@@ -260,7 +260,6 @@ export default function BudgetsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <PeriodSelector value={period} onChange={setPeriod} />
             <Link
               href="/dashboard/categories"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface hover:bg-surface-hover border border-line-subtle text-xs sm:text-sm text-ink-body transition-colors"

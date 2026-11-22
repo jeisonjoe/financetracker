@@ -16,11 +16,11 @@ import {
   BiUserCheck,
 } from "react-icons/bi";
 import { toast } from "sonner";
-import PeriodSelector from "@/app/components/PeriodSelector";
 import ProgressRing from "@/app/components/ProgressRing";
 import TopMerchantsBarChart from "@/app/components/charts/TopMerchantsBarChart";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAnalytics } from "@/app/hooks/useFinanceData";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { AiApi } from "@/app/services/ApiClient";
 import {
   DEFAULT_AI_SETTINGS,
@@ -39,7 +39,7 @@ export default function InsightsPage() {
   const { user } = useAuth();
   const currency = user?.currency || "INR";
 
-  const [period, setPeriod] = useState("this_month");
+  const { period } = useGlobalPeriod();
   const [mounted, setMounted] = useState(false);
   const [aiSettings, setAiSettings] = useState(DEFAULT_AI_SETTINGS);
   const [envConfigured, setEnvConfigured] = useState({ gemini: false, claude: false });
@@ -151,7 +151,6 @@ export default function InsightsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <PeriodSelector value={period} onChange={setPeriod} />
           <Link
             href="/import"
             className="px-4 py-2 rounded-full bg-surface hover:bg-surface-hover border border-line-subtle text-xs sm:text-sm text-ink-body transition-colors"
