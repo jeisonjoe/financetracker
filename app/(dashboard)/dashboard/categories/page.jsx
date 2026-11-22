@@ -372,6 +372,25 @@ export default function CategoriesPage() {
                                 · Spent {cFormat(spent, { currency })}
                               </span>
                             )}
+                            {hasLimit && (
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                  spent > Number(parent.monthly_budget)
+                                    ? "bg-red-500/10 text-red-700"
+                                    : Math.round((spent / Number(parent.monthly_budget)) * 100) >
+                                      Math.round((new Date().getDate() / 30) * 100) + 15
+                                    ? "bg-amber-500/10 text-amber-700"
+                                    : "bg-emerald-500/10 text-emerald-700"
+                                }`}
+                              >
+                                {spent > Number(parent.monthly_budget)
+                                  ? "Exhausted"
+                                  : Math.round((spent / Number(parent.monthly_budget)) * 100) >
+                                    Math.round((new Date().getDate() / 30) * 100) + 15
+                                  ? `Fast Pace (${Math.round((spent / Number(parent.monthly_budget)) * 100)}%)`
+                                  : "On Track"}
+                              </span>
+                            )}
                             <span className="text-ink-faint">
                               · {subs.length} {subs.length === 1 ? "subcategory" : "subcategories"}
                             </span>
@@ -492,6 +511,22 @@ export default function CategoriesPage() {
                                       {subSpent > 0 && (
                                         <span className="tabular-nums text-ink-muted">
                                           Spent {cFormat(subSpent, { currency })}
+                                        </span>
+                                      )}
+                                      {subBudget > 0 && (
+                                        <span
+                                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-medium ${
+                                            subSpent > subBudget
+                                              ? "bg-red-500/10 text-red-700"
+                                              : Math.round((subSpent / subBudget) * 100) >
+                                                Math.round((new Date().getDate() / 30) * 100) + 15
+                                              ? "bg-amber-500/10 text-amber-700"
+                                              : "bg-emerald-500/10 text-emerald-700"
+                                          }`}
+                                        >
+                                          {subSpent > subBudget
+                                            ? "Exceeded"
+                                            : `${Math.round((subSpent / subBudget) * 100)}%`}
                                         </span>
                                       )}
                                       {subBudget === 0 && subSpent === 0 && (

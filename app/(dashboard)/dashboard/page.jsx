@@ -22,6 +22,9 @@ import CategoryDrilldownChart from "@/app/components/charts/CategoryDrilldownCha
 import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 import StreamsWidget from "../components/StreamsWidget";
 import TransactionsWidget from "../components/TransactionsWidget";
+import FinancialPulseHero from "../components/FinancialPulseHero";
+import MoneyLeaksFeed from "../components/MoneyLeaksFeed";
+import CanIAffordItModal from "../components/CanIAffordItModal";
 
 const QUICK_GOAL_CHIPS = [500, 1000, 5000];
 
@@ -54,6 +57,7 @@ export default function Page() {
   const symbol = getCurrencySymbol(currency);
 
   const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [affordModalOpen, setAffordModalOpen] = useState(false);
   const [contribAmount, setContribAmount] = useState("");
   const [cachedInsight, setCachedInsight] = useState(null);
 
@@ -187,37 +191,16 @@ export default function Page() {
 
   return (
     <div className="flex flex-col gap-6 pb-8 grow">
-      {/* Top Hero Row + Period Switcher */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-baseline text-ink-primary tabular-nums">
-            <span className="text-4xl sm:text-5xl lg:text-[52px] font-light leading-none">
-              {heroParts.sign}
-              {heroParts.symbol}
-              {isLoading ? "..." : heroParts.whole}
-            </span>
-            <span className="text-sm sm:text-base font-light text-ink-subtle ml-1">
-              .{heroParts.decimal}
-            </span>
-          </div>
-          <span className="text-xs sm:text-sm text-ink-subtle font-normal">
-            Available balance across {wallets.length}{" "}
-            {wallets.length === 1 ? "wallet" : "wallets"}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {overBudgetCount > 0 && (
-            <Link
-              href="/dashboard/budgets"
-              className="px-3.5 py-2 rounded-full bg-red-10 text-red-100 text-xs font-medium transition-colors"
-            >
-              {overBudgetCount}{" "}
-              {overBudgetCount === 1 ? "category over cap" : "categories over cap"}
-            </Link>
-          )}
-        </div>
-      </div>
+      {/* Smart Financial Pulse Hero */}
+      <FinancialPulseHero
+        summary={summary}
+        pace={pace}
+        planning={planning}
+        wallets={wallets}
+        currency={currency}
+        isLoading={isLoading}
+        onOpenAffordModal={() => setAffordModalOpen(true)}
+      />
 
       {/* 4-Metric Financial KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -296,6 +279,15 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+      {/* Automated Money Leaks & Anomalies Feed */}
+      <MoneyLeaksFeed
+        merchantIntelligence={data?.merchantIntelligence}
+        categoryBreakdown={categoryBreakdown}
+        planning={planning}
+        pace={pace}
+        currency={currency}
+      />
 
       {/* Visual Insights Row: 14-Day Cashflow & Pace + Top Categories */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
@@ -475,21 +467,29 @@ export default function Page() {
               />
 
               <div className="flex flex-col gap-2.5">
-                {categoryBreakdown.slice(0, 4).map((cat) => {
+                {categoryBreakdown.slice(0, 5).map((cat) => {
                   const hasBudget = cat.budget > 0;
                   const fillPct = hasBudget ? cat.budgetPercent : cat.sharePercent;
+                  const totalCycleDays = (pace?.daysElapsed || 1) + (pace?.daysRemaining || 1);
+                  const timeElapsedPercent = Math.round(
+                    ((pace?.daysElapsed || 1) / Math.max(1, totalCycleDays)) * 100
+                  );
+                  const isPacingFast =
+                    hasBudget && !cat.overBudget && cat.budgetPercent > timeElapsedPercent + 15;
+                  const isOnTrack = hasBudget && !cat.overBudget && !isPacingFast;
+
                   const barColor = cat.overBudget
-                    ? "bg-red-100"
-                    : hasBudget && cat.budgetPercent >= 80
-                    ? "bg-accent"
+                    ? "bg-red-500"
+                    : isPacingFast
+                    ? "bg-amber-500"
                     : "bg-ink-muted";
 
                   return (
                     <Link
                       key={cat.name}
-                      href={`/dashboard/transactions?category=${encodeURIComponent(cat.name)}`}
-                      className="group flex flex-col gap-1.5 p-1.5 -mx-1.5 rounded-xl hover:bg-surface-hover/70 transition-colors cursor-pointer"
-                      title={`View ${cat.name} transactions`}
+                      href={`/dashboard/categories`}
+                      className="group flex flex-col gap-1.5 p-2 rounded-xl hover:bg-surface transition-colors cursor-pointer"
+                      title={`Inspect ${cat.name}`}
                     >
                       <div className="flex items-center justify-between gap-2 text-xs">
                         <div className="flex items-center gap-2 min-w-0">
@@ -501,12 +501,22 @@ export default function Page() {
                                 "text-sm text-ink-muted shrink-0 group-hover:text-ink-secondary transition-colors",
                             }}
                           />
-                          <span className="text-ink-body group-hover:text-ink-primary font-normal transition-colors truncate">
+                          <span className="text-ink-body group-hover:text-ink-primary font-medium transition-colors truncate">
                             {cat.name}
                           </span>
                           {cat.overBudget && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-10 text-red-100 shrink-0">
-                              Over
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-700 shrink-0 font-medium">
+                              Exhausted
+                            </span>
+                          )}
+                          {isPacingFast && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 shrink-0 font-medium">
+                              Fast Pace
+                            </span>
+                          )}
+                          {isOnTrack && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 shrink-0 font-medium">
+                              On Track
                             </span>
                           )}
                         </div>
@@ -522,7 +532,7 @@ export default function Page() {
                         </div>
                       </div>
 
-                      <div className="w-full h-1 rounded-full bg-tint overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-tint overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${barColor}`}
                           style={{ width: `${Math.min(100, fillPct)}%` }}
@@ -814,6 +824,17 @@ export default function Page() {
           </div>
         </form>
       </Modal>
+
+      {/* Decision Simulator Modal */}
+      <CanIAffordItModal
+        isOpen={affordModalOpen}
+        onClose={() => setAffordModalOpen(false)}
+        summary={summary}
+        pace={pace}
+        planning={planning}
+        categories={categoryBreakdown}
+        currency={currency}
+      />
     </div>
   );
 }
