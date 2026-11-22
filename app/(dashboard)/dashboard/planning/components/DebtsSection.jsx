@@ -23,6 +23,13 @@ import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
 import DatePicker from "@/app/components/DatePicker";
 
+const STATUS_OPTIONS = [
+  { key: "all", name: "All Status" },
+  { key: "owes_you", name: "Owes You" },
+  { key: "you_owe", name: "You Owe" },
+  { key: "settled", name: "Settled" },
+];
+
 export default function DebtsSection({ planning, currency }) {
   const debts = useMemo(() => {
     const raw = planning?.debtsSummary || {};
@@ -232,29 +239,32 @@ export default function DebtsSection({ planning, currency }) {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-surface border border-line-subtle rounded-full px-3 py-1 text-xs">
-                <BiSearch className="text-ink-subtle" size={14} />
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-2 bg-surface border border-line-subtle rounded-full px-3.5 py-1.5 text-xs focus-within:border-line-strong transition-colors">
+                <BiSearch className="text-ink-subtle shrink-0" size={15} />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Filter contact..."
-                  className="bg-transparent text-ink-primary placeholder:text-ink-placeholder focus:outline-none w-28"
+                  className="bg-transparent text-ink-primary placeholder:text-ink-placeholder focus:outline-none w-28 sm:w-36 text-xs"
                 />
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                aria-label="Filter contacts by debt status"
-                className="bg-surface border border-line-subtle rounded-full px-2.5 py-1 text-xs text-ink-secondary focus:outline-none cursor-pointer"
-              >
-                <option value="all">All Status</option>
-                <option value="owes_you">Owes You</option>
-                <option value="you_owe">You Owe</option>
-                <option value="settled">Settled</option>
-              </select>
+              <div className="w-32 sm:w-36">
+                <Dropdown
+                  ariaLabel="Filter contacts by debt status"
+                  options={STATUS_OPTIONS}
+                  value={{
+                    key: statusFilter,
+                    name:
+                      STATUS_OPTIONS.find((o) => o.key === statusFilter)?.name ||
+                      "All Status",
+                  }}
+                  onChange={(opt) => setStatusFilter(opt.key)}
+                  triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-line-subtle hover:bg-surface-hover text-xs text-ink-body px-3.5 py-1.5 rounded-full focus:outline-none cursor-pointer transition-colors"
+                />
+              </div>
             </div>
           </div>
 
@@ -486,13 +496,13 @@ export default function DebtsSection({ planning, currency }) {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-ink-subtle">Settlement Date</label>
-            <input
-              type="date"
+            <DatePicker
               value={repayForm.date}
-              onChange={(e) =>
-                setRepayForm((prev) => ({ ...prev, date: e.target.value }))
+              onChange={(val) =>
+                setRepayForm((prev) => ({ ...prev, date: val }))
               }
-              className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
+              placeholder="Select settlement date"
+              align="right"
             />
           </div>
 

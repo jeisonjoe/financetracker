@@ -10,6 +10,7 @@ import {
   BiX,
 } from "react-icons/bi";
 import Modal from "@/app/components/Modal";
+import Dropdown from "@/app/components/Dropdown";
 import { cFormat } from "@/app/utils/currencyFormat";
 
 const QUICK_AMOUNTS = [1000, 2500, 5000, 10000];
@@ -177,18 +178,27 @@ export default function CanIAffordItModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-ink-subtle">Category (Optional)</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-surface border border-line-subtle rounded-xl px-3 py-2 text-xs text-ink-body focus:outline-none cursor-pointer"
-            >
-              <option value="">General Discretionary</option>
-              {categories.map((c) => (
-                <option key={c.name} value={c.name}>
-                  {c.name} {c.budget > 0 ? `(Cap: ${cFormat(c.budget, { currency })})` : ""}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              options={[
+                { key: "", name: "General Discretionary" },
+                ...categories.map((c) => ({
+                  key: c.name,
+                  name: `${c.name}${
+                    c.budget > 0 ? ` (Cap: ${cFormat(c.budget, { currency })})` : ""
+                  }`,
+                })),
+              ]}
+              value={{
+                key: selectedCategory,
+                name:
+                  selectedCategory
+                    ? categories.find((c) => c.name === selectedCategory)?.name ||
+                      selectedCategory
+                    : "General Discretionary",
+              }}
+              onChange={(opt) => setSelectedCategory(opt.key)}
+              triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-line-subtle hover:bg-surface-hover text-xs text-ink-body px-3.5 py-2 rounded-xl focus:outline-none cursor-pointer transition-colors"
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
