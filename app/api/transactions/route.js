@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { ApiController } from "@/app/server/http/ApiController";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req) {
   return ApiController.handle(async ({ services, user }) => {
     const sp = req.nextUrl.searchParams;
