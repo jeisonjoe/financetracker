@@ -55,8 +55,8 @@ export default function CategoryDrilldownChart({
             {
               data: items.map((i) => i.spent),
               backgroundColor: items.map((i) => i.color),
-              borderColor: "#ffffff",
-              borderWidth: 2,
+              borderColor: "transparent",
+              borderWidth: 0,
               hoverOffset: 4,
             },
           ],
@@ -99,8 +99,8 @@ export default function CategoryDrilldownChart({
           {
             data: items.map((i) => i.spent),
             backgroundColor: items.map((i) => i.color),
-            borderColor: "#ffffff",
-            borderWidth: 2,
+            borderColor: "transparent",
+            borderWidth: 0,
             hoverOffset: 4,
           },
         ],
@@ -130,6 +130,7 @@ export default function CategoryDrilldownChart({
         tooltip: {
           ...COMMON_TOOLTIP_STYLE,
           callbacks: {
+            title: () => "",
             label: function (context) {
               const label = context.label || "";
               const val = context.parsed || 0;

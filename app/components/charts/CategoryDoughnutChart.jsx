@@ -37,8 +37,8 @@ export default function CategoryDoughnutChart({
           {
             data,
             backgroundColor: CHART_PALETTE.slice(0, labels.length),
-            borderColor: "#ffffff", // clean light mode slice separator
-            borderWidth: 2,
+            borderColor: "transparent",
+            borderWidth: 0,
             hoverOffset: 4,
           },
         ],
@@ -58,6 +58,7 @@ export default function CategoryDoughnutChart({
         tooltip: {
           ...COMMON_TOOLTIP_STYLE,
           callbacks: {
+            title: () => "",
             label: function (context) {
               const label = context.label || "";
               const val = context.parsed || 0;
