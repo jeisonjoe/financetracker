@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BiEdit, BiPlus, BiSearch, BiSliderAlt, BiTrash } from "react-icons/bi";
+import { BiChevronDown, BiEdit, BiPlus, BiSearch, BiSliderAlt, BiTrash } from "react-icons/bi";
 import { toast } from "sonner";
 import AddCategoryPane from "@/app/(dashboard)/components/AddCategoryPane";
 import ActionModal from "@/app/components/ActionModal";
@@ -40,11 +40,13 @@ export default function CategoriesPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [expandedParents, setExpandedParents] = useState(new Set());
 
   const { data: categories = [], isLoading } = useCategoriesQuery();
   const { data: analytics } = useAnalytics(period);
   const { deleteCategory } = useCategoryMutations();
 
+  // Spend maps from analytics breakdown
   const spentByName = useMemo(
     () =>
       new Map(
@@ -53,26 +55,73 @@ export default function CategoriesPage() {
     [analytics?.categoryBreakdown]
   );
 
+  const subSpentMap = useMemo(() => {
+    const map = new Map();
+    for (const cat of analytics?.categoryBreakdown || []) {
+      for (const sub of cat.subcategories || []) {
+        map.set(`${cat.name}:::${sub.name}`, sub.spent);
+      }
+    }
+    return map;
+  }, [analytics?.categoryBreakdown]);
+
+  // Group into parent categories and child subcategories
+  const { parentCategories, subcategoriesByParentId } = useMemo(() => {
+    const parents = [];
+    const childrenMap = new Map();
+
+    for (const cat of categories) {
+      if (!cat.parent_id && !cat.parentId) {
+        parents.push(cat);
+      } else {
+        const pId = String(cat.parent_id || cat.parentId);
+        if (!childrenMap.has(pId)) {
+          childrenMap.set(pId, []);
+        }
+        childrenMap.get(pId).push(cat);
+      }
+    }
+
+    return {
+      parentCategories: parents,
+      subcategoriesByParentId: childrenMap,
+    };
+  }, [categories]);
+
   const typeCounts = useMemo(
     () => ({
-      all: categories.length,
-      expense: categories.filter((c) => c.type === "expense").length,
-      income: categories.filter((c) => c.type === "income").length,
-      both: categories.filter((c) => c.type === "both").length,
+      all: parentCategories.length,
+      expense: parentCategories.filter((c) => c.type === "expense").length,
+      income: parentCategories.filter((c) => c.type === "income").length,
+      both: parentCategories.filter((c) => c.type === "both").length,
     }),
-    [categories]
+    [parentCategories]
   );
 
-  const filteredCategories = useMemo(() => {
+  const filteredParents = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return categories.filter((cat) => {
-      if (typeFilter !== "all" && cat.type !== typeFilter) return false;
-      if (q && !cat.name.toLowerCase().includes(q)) return false;
-      return true;
+    return parentCategories.filter((parent) => {
+      if (typeFilter !== "all" && parent.type !== typeFilter) return false;
+      if (!q) return true;
+
+      const parentMatch = parent.name.toLowerCase().includes(q);
+      const subs = subcategoriesByParentId.get(String(parent.id)) || [];
+      const subMatch = subs.some((s) => s.name.toLowerCase().includes(q));
+
+      return parentMatch || subMatch;
     });
-  }, [categories, search, typeFilter]);
+  }, [parentCategories, subcategoriesByParentId, search, typeFilter]);
 
   const breakdown = analytics?.categoryBreakdown || [];
+
+  const toggleExpand = (parentId) => {
+    setExpandedParents((prev) => {
+      const next = new Set(prev);
+      if (next.has(parentId)) next.delete(parentId);
+      else next.add(parentId);
+      return next;
+    });
+  };
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -123,7 +172,7 @@ export default function CategoriesPage() {
             <BiSearch className="text-ink-subtle shrink-0" size={15} />
             <input
               type="text"
-              placeholder="Search categories..."
+              placeholder="Search category or subcategory..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-xs sm:text-sm text-ink-primary placeholder:text-ink-placeholder focus:outline-none w-full"
@@ -140,7 +189,7 @@ export default function CategoriesPage() {
 
           <button
             type="button"
-            onClick={() => open(AddCategoryPane)}
+            onClick={() => open(AddCategoryPane, { isSubcategory: false })}
             className="bg-cta hover:bg-cta-hover text-cta-ink inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-medium cursor-pointer transition-colors"
           >
             <BiPlus size={17} />
@@ -151,81 +200,190 @@ export default function CategoriesPage() {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Category Library Grid */}
+        {/* Category Library Column */}
         <div className="lg:col-span-8 bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-normal text-ink-secondary">
-              Category Library
+              Categories &amp; Subcategories
             </h2>
             <span className="text-xs text-ink-subtle tabular-nums">
-              {filteredCategories.length} shown
+              {filteredParents.length} categories shown
             </span>
           </div>
 
-          {filteredCategories.length === 0 ? (
+          {filteredParents.length === 0 ? (
             <div className="py-12 text-center text-sm text-ink-subtle">
-              No matching categories found.
+              No matching categories or subcategories found.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {filteredCategories.map((cat) => {
-                const spent = spentByName.get(cat.name) || 0;
-                const hasLimit = Number(cat.monthly_budget) > 0;
+            <div className="flex flex-col gap-3.5">
+              {filteredParents.map((parent) => {
+                const subs = subcategoriesByParentId.get(String(parent.id)) || [];
+                const spent = spentByName.get(parent.name) || 0;
+                const hasLimit = Number(parent.monthly_budget) > 0;
+                const isExpanded = expandedParents.has(parent.id) || Boolean(search.trim());
 
                 return (
                   <div
-                    key={cat.id}
-                    className="group rounded-2xl bg-surface border border-line-faint hover:border-line p-4 flex items-center justify-between gap-3 transition-colors"
+                    key={parent.id}
+                    className="rounded-2xl bg-surface border border-line-faint hover:border-line transition-colors overflow-hidden"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-11 h-11 rounded-xl bg-tint text-ink-secondary flex items-center justify-center shrink-0">
-                        <RenderIcon
-                          icon={cat.icon}
-                          name={cat.name}
-                          props={{ className: "text-xl" }}
-                        />
-                      </div>
+                    {/* Parent Header Row */}
+                    <div className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-11 h-11 rounded-xl bg-tint text-ink-secondary flex items-center justify-center shrink-0">
+                          <RenderIcon
+                            icon={parent.icon}
+                            name={parent.name}
+                            props={{ className: "text-xl" }}
+                          />
+                        </div>
 
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-sm sm:text-base font-normal text-ink-primary truncate">
-                          {cat.name}
-                        </span>
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-subtle">
-                          <span className="px-2 py-0.5 rounded-full bg-tint-subtle text-ink-muted">
-                            {TYPE_LABELS[cat.type] || cat.type}
-                          </span>
-                          {hasLimit && (
-                            <span className="tabular-nums">
-                              Cap {cFormat(cat.monthly_budget, { currency })}
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm sm:text-base font-medium text-ink-primary truncate">
+                              {parent.name}
                             </span>
-                          )}
-                          {spent > 0 && (
-                            <span className="tabular-nums">
-                              · Spent {cFormat(spent, { currency })}
+                            <span className="px-2 py-0.5 rounded-full bg-tint-subtle text-[11px] text-ink-muted shrink-0">
+                              {TYPE_LABELS[parent.type] || parent.type}
                             </span>
-                          )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                            {hasLimit && (
+                              <span className="tabular-nums">
+                                Cap {cFormat(parent.monthly_budget, { currency })}
+                              </span>
+                            )}
+                            {spent > 0 && (
+                              <span className="tabular-nums">
+                                · Spent {cFormat(spent, { currency })}
+                              </span>
+                            )}
+                            <span className="text-ink-faint">
+                              · {subs.length} {subs.length === 1 ? "subcategory" : "subcategories"}
+                            </span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Parent Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            open(AddCategoryPane, {
+                              defaultParentId: parent.id,
+                              isSubcategory: true,
+                            })
+                          }
+                          className="px-2.5 py-1 text-xs text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full border border-line-subtle transition-colors cursor-pointer inline-flex items-center gap-1"
+                          title={`Add subcategory under ${parent.name}`}
+                        >
+                          <BiPlus size={14} />
+                          <span className="hidden sm:inline">Subcategory</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => open(AddCategoryPane, { category: parent })}
+                          className="p-1.5 text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full transition-colors cursor-pointer"
+                          title={`Edit ${parent.name}`}
+                        >
+                          <BiEdit size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(parent)}
+                          className="p-1.5 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full transition-colors cursor-pointer"
+                          title={`Delete ${parent.name}`}
+                        >
+                          <BiTrash size={16} />
+                        </button>
+                        {subs.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpand(parent.id)}
+                            className="p-1.5 text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full transition-colors cursor-pointer"
+                            title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                          >
+                            <BiChevronDown
+                              size={18}
+                              className={`transition-transform duration-200 ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => open(AddCategoryPane, { category: cat })}
-                        className="p-2 text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full transition-colors cursor-pointer"
-                        title={`Edit ${cat.name}`}
-                      >
-                        <BiEdit size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(cat)}
-                        className="p-2 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full transition-colors cursor-pointer"
-                        title={`Delete ${cat.name}`}
-                      >
-                        <BiTrash size={16} />
-                      </button>
-                    </div>
+                    {/* Subcategories Nested List */}
+                    {subs.length > 0 && isExpanded && (
+                      <div className="px-4 pb-3.5 pt-1 border-t border-line-faint bg-surface-elevated/30">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                          {subs.map((sub) => {
+                            const subSpent =
+                              subSpentMap.get(`${parent.name}:::${sub.name}`) || 0;
+                            const subBudget = Number(sub.monthly_budget) || 0;
+
+                            return (
+                              <div
+                                key={sub.id}
+                                className="group/sub flex items-center justify-between gap-2 p-2.5 bg-surface border border-line-subtle rounded-xl hover:border-line transition-colors"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-ink-subtle text-xs shrink-0">↳</span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-medium text-ink-body truncate">
+                                      {sub.name}
+                                    </span>
+                                    <div className="flex items-center gap-1.5 text-[11px] text-ink-subtle">
+                                      {subBudget > 0 && (
+                                        <span className="tabular-nums">
+                                          Cap {cFormat(subBudget, { currency })}
+                                        </span>
+                                      )}
+                                      {subSpent > 0 && (
+                                        <span className="tabular-nums text-ink-muted">
+                                          Spent {cFormat(subSpent, { currency })}
+                                        </span>
+                                      )}
+                                      {subBudget === 0 && subSpent === 0 && (
+                                        <span className="text-ink-faint">No limit</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-0.5 shrink-0 opacity-80 group-hover/sub:opacity-100 transition-opacity">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      open(AddCategoryPane, {
+                                        category: sub,
+                                        isSubcategory: true,
+                                      })
+                                    }
+                                    className="p-1 text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full transition-colors cursor-pointer"
+                                    title={`Edit ${sub.name}`}
+                                  >
+                                    <BiEdit size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeleteTarget(sub)}
+                                    className="p-1 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full transition-colors cursor-pointer"
+                                    title={`Delete ${sub.name}`}
+                                  >
+                                    <BiTrash size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -233,7 +391,7 @@ export default function CategoriesPage() {
           )}
         </div>
 
-        {/* Right Breakdown Column */}
+        {/* Right: Spending Share & Subcategory Drill-down */}
         <div className="lg:col-span-4 bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-normal text-ink-secondary">
@@ -252,7 +410,7 @@ export default function CategoriesPage() {
               </span>
             </div>
           ) : (
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-4">
               {breakdown.map((item) => (
                 <div key={item.name} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
@@ -262,18 +420,40 @@ export default function CategoriesPage() {
                         name={item.name}
                         props={{ className: "text-base text-ink-muted shrink-0" }}
                       />
-                      <span className="text-ink-body truncate">{item.name}</span>
+                      <span className="text-ink-body font-medium truncate">{item.name}</span>
                     </div>
                     <span className="font-medium text-ink-secondary tabular-nums shrink-0">
                       {cFormat(item.spent, { currency })} ({item.sharePercent}%)
                     </span>
                   </div>
+
                   <div className="w-full h-1.5 rounded-full bg-tint overflow-hidden">
                     <div
                       className="h-full rounded-full bg-ink-muted transition-all duration-300"
                       style={{ width: `${Math.min(100, item.sharePercent)}%` }}
                     />
                   </div>
+
+                  {/* Subcategories Breakdown */}
+                  {item.subcategories?.length > 0 && (
+                    <div className="flex flex-col pl-3 pt-1 gap-1 border-l border-line-faint ml-2">
+                      {item.subcategories.slice(0, 4).map((sub) => {
+                        const subShare =
+                          item.spent > 0 ? Math.round((sub.spent / item.spent) * 100) : 0;
+                        return (
+                          <div
+                            key={sub.name}
+                            className="flex items-center justify-between text-[11px] text-ink-subtle"
+                          >
+                            <span className="truncate">↳ {sub.name}</span>
+                            <span className="tabular-nums font-mono text-ink-muted shrink-0">
+                              {cFormat(sub.spent, { currency })} ({subShare}%)
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -283,7 +463,11 @@ export default function CategoriesPage() {
 
       <ActionModal
         isOpen={Boolean(deleteTarget)}
-        content={`Delete category "${deleteTarget?.name}"?`}
+        content={
+          deleteTarget?.parent_id || deleteTarget?.parentId
+            ? `Delete subcategory "${deleteTarget?.name}"?`
+            : `Delete category "${deleteTarget?.name}"? Any subcategories under it will also be deleted.`
+        }
         primaryBtnText="Delete"
         secBtnText="Cancel"
         primaryAction={confirmDelete}

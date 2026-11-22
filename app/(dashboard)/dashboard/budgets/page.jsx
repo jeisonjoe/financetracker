@@ -55,10 +55,37 @@ export default function BudgetsPage() {
   const { data: planning } = usePlanningOverview();
   const { updateCategory } = useCategoryMutations();
 
-  const budgetCategories = useMemo(
+  const allExpenseCategories = useMemo(
     () => categories.filter(isExpenseBudgetCategory),
     [categories]
   );
+
+  const budgetCategories = useMemo(
+    () => allExpenseCategories.filter((c) => !c.parent_id && !c.parentId),
+    [allExpenseCategories]
+  );
+
+  const subcategoriesByParentId = useMemo(() => {
+    const map = new Map();
+    for (const c of allExpenseCategories) {
+      if (c.parent_id || c.parentId) {
+        const pId = String(c.parent_id || c.parentId);
+        if (!map.has(pId)) map.set(pId, []);
+        map.get(pId).push(c);
+      }
+    }
+    return map;
+  }, [allExpenseCategories]);
+
+  const subSpentMap = useMemo(() => {
+    const map = new Map();
+    for (const cat of analytics?.categoryBreakdown || []) {
+      for (const sub of cat.subcategories || []) {
+        map.set(`${cat.name}:::${sub.name}`, sub.spent);
+      }
+    }
+    return map;
+  }, [analytics?.categoryBreakdown]);
 
   const spentByName = useMemo(
     () =>
@@ -77,13 +104,13 @@ export default function BudgetsPage() {
 
   const dirtyCategories = useMemo(
     () =>
-      budgetCategories.filter((cat) => {
+      allExpenseCategories.filter((cat) => {
         if (draftBudgets[cat.id] === undefined) return false;
         const nextVal = Math.max(0, Number(draftBudgets[cat.id]) || 0);
         const currentVal = Number(cat.monthly_budget) || 0;
         return nextVal !== currentVal;
       }),
-    [budgetCategories, draftBudgets]
+    [allExpenseCategories, draftBudgets]
   );
 
   const stats = useMemo(() => {
@@ -360,6 +387,7 @@ export default function BudgetsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredCategories.map((cat) => {
+                const subs = subcategoriesByParentId.get(String(cat.id)) || [];
                 const spent = spentByName.get(cat.name) || 0;
                 const effectiveLimit = getEffectiveBudget(cat);
                 const isDirty = dirtyCategories.some((d) => d.id === cat.id);
@@ -470,6 +498,90 @@ export default function BudgetsPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Subcategories Individual Budgets */}
+                    {subs.length > 0 && (
+                      <div className="pt-2.5 border-t border-line-faint flex flex-col gap-2">
+                        <div className="flex items-center justify-between text-[11px] text-ink-subtle">
+                          <span className="font-medium">Subcategories ({subs.length})</span>
+                          <span className="text-ink-faint">Individual caps</span>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          {subs.map((sub) => {
+                            const subSpent =
+                              subSpentMap.get(`${cat.name}:::${sub.name}`) || 0;
+                            const subEffectiveLimit = getEffectiveBudget(sub);
+                            const subIsOver =
+                              subEffectiveLimit > 0 && subSpent > subEffectiveLimit;
+                            const subProgressPct =
+                              subEffectiveLimit > 0
+                                ? Math.min(
+                                    100,
+                                    Math.round(
+                                      (subSpent / subEffectiveLimit) * 100
+                                    )
+                                  )
+                                : 0;
+                            const subRawValue =
+                              draftBudgets[sub.id] !== undefined
+                                ? draftBudgets[sub.id]
+                                : sub.monthly_budget > 0
+                                ? String(sub.monthly_budget)
+                                : "";
+
+                            return (
+                              <div
+                                key={sub.id}
+                                className="flex flex-col gap-1 p-2 bg-surface-elevated/40 rounded-xl border border-line-faint"
+                              >
+                                <div className="flex items-center justify-between gap-2 text-xs">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-ink-subtle text-[11px]">
+                                      ↳
+                                    </span>
+                                    <span className="truncate text-ink-body font-medium">
+                                      {sub.name}
+                                    </span>
+                                    <span className="text-[11px] text-ink-subtle tabular-nums">
+                                      Spent {cFormat(subSpent, { currency })}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] text-ink-subtle">
+                                      {symbol}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      placeholder="No cap"
+                                      aria-label={`Monthly limit for subcategory ${sub.name}`}
+                                      value={subRawValue}
+                                      onChange={(e) =>
+                                        setDraftBudgets((prev) => ({
+                                          ...prev,
+                                          [sub.id]: e.target.value,
+                                        }))
+                                      }
+                                      className="w-16 bg-surface border border-line rounded px-1.5 py-0.5 text-xs text-ink-primary placeholder:text-ink-placeholder text-right tabular-nums focus:outline-none focus:border-line-focus"
+                                    />
+                                  </div>
+                                </div>
+                                {subEffectiveLimit > 0 && (
+                                  <div className="w-full h-1 rounded-full bg-tint overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-300 ${
+                                        subIsOver ? "bg-red-100" : "bg-ink-muted"
+                                      }`}
+                                      style={{ width: `${subProgressPct}%` }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

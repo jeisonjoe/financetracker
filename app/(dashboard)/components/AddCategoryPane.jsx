@@ -1,14 +1,32 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import IconPicker from "@/app/components/IconPicker";
+import Dropdown from "@/app/components/Dropdown";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
-import { useCategoryMutations } from "@/app/hooks/useFinanceData";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useCategoriesQuery, useCategoryMutations } from "@/app/hooks/useFinanceData";
 
-export default function AddCategoryPane({ category: editCategory = null }) {
+export default function AddCategoryPane({
+  category: editCategory = null,
+  defaultParentId = null,
+  isSubcategory: initialIsSubcategory = false,
+}) {
+  const { data: allCategories = [] } = useCategoriesQuery();
+  const parentCategories = useMemo(
+    () => allCategories.filter((c) => !c.parent_id && !c.parentId),
+    [allCategories]
+  );
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubcategory, setIsSubcategory] = useState(
+    Boolean(editCategory?.parent_id || editCategory?.parentId || defaultParentId || initialIsSubcategory)
+  );
+  const [parentId, setParentId] = useState(
+    editCategory?.parent_id || editCategory?.parentId || defaultParentId || (parentCategories[0]?.id || "")
+  );
+
   const [name, setName] = useState(editCategory?.name || "");
   const [type, setType] = useState(editCategory?.type || "expense");
   const [monthlyBudget, setMonthlyBudget] = useState(
@@ -26,16 +44,35 @@ export default function AddCategoryPane({ category: editCategory = null }) {
   };
 
   useEffect(() => {
+    const title = editCategory
+      ? isSubcategory
+        ? "Edit Subcategory"
+        : "Edit Category"
+      : isSubcategory
+      ? "New Subcategory"
+      : "New Category";
+
     setProps({
-      title: editCategory ? "Edit Category" : "New Category",
+      title,
       onclose: handleClose,
     });
-  }, [isOpen, editCategory]);
+  }, [isOpen, editCategory, isSubcategory]);
+
+  // Keep type in sync with selected parent when subcategory is active
+  const selectedParent = useMemo(
+    () => parentCategories.find((p) => String(p.id) === String(parentId)) || parentCategories[0],
+    [parentCategories, parentId]
+  );
 
   const handleSubmitData = async () => {
     if (!user) return;
     if (!name.trim()) {
-      toast.error("Please enter a category name");
+      toast.error("Please enter a name");
+      return;
+    }
+
+    if (isSubcategory && !parentId) {
+      toast.error("Please select a parent category");
       return;
     }
 
@@ -43,17 +80,18 @@ export default function AddCategoryPane({ category: editCategory = null }) {
     try {
       const payload = {
         name: name.trim(),
-        type,
-        icon,
+        parent_id: isSubcategory ? String(parentId) : null,
+        type: isSubcategory ? (selectedParent?.type || "expense") : type,
+        icon: isSubcategory ? (selectedParent?.icon || icon) : icon,
         monthly_budget: Number(monthlyBudget) || 0,
       };
 
       if (editCategory) {
         await updateCategory.mutateAsync({ id: editCategory.id, payload });
-        toast.success(`Updated category: ${name}`);
+        toast.success(`Updated ${isSubcategory ? "subcategory" : "category"}: ${name}`);
       } else {
         await createCategory.mutateAsync(payload);
-        toast.success(`Created category: ${name}`);
+        toast.success(`Created ${isSubcategory ? "subcategory" : "category"}: ${name}`);
       }
       closeRhs();
     } catch (error) {
@@ -66,38 +104,105 @@ export default function AddCategoryPane({ category: editCategory = null }) {
   return (
     <div className="flex flex-col justify-between h-full gap-6">
       <div className="flex flex-col gap-5">
+        {/* Category vs Subcategory Toggle */}
+        {!editCategory && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-normal text-ink-subtle pl-1">Level</label>
+            <div className="flex bg-surface-elevated border border-line-subtle p-1 rounded-full self-start">
+              <button
+                type="button"
+                onClick={() => setIsSubcategory(false)}
+                className={`px-4 py-1.5 rounded-full text-xs font-normal cursor-pointer transition-colors ${
+                  !isSubcategory ? "bg-cta text-cta-ink font-medium" : "text-ink-subtle hover:text-ink-secondary"
+                }`}
+              >
+                Top-Level Category
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSubcategory(true);
+                  if (!parentId && parentCategories.length > 0) {
+                    setParentId(parentCategories[0].id);
+                  }
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-normal cursor-pointer transition-colors ${
+                  isSubcategory ? "bg-cta text-cta-ink font-medium" : "text-ink-subtle hover:text-ink-secondary"
+                }`}
+              >
+                Subcategory
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Parent Category Selector (If Subcategory) */}
+        {isSubcategory && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-normal text-ink-subtle pl-1">
+              Parent Category
+            </label>
+            <Dropdown
+              options={parentCategories.map((p) => ({
+                key: String(p.id),
+                name: p.name,
+              }))}
+              value={
+                selectedParent
+                  ? { key: String(selectedParent.id), name: selectedParent.name }
+                  : { key: "", name: "Select Parent Category" }
+              }
+              onChange={(opt) => setParentId(opt.key)}
+              placeholder="Select Parent Category"
+            />
+          </div>
+        )}
+
+        {/* Name Input */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-normal text-ink-subtle pl-1">Name</label>
+          <label className="text-xs font-normal text-ink-subtle pl-1">
+            {isSubcategory ? "Subcategory Name" : "Category Name"}
+          </label>
           <input
             type="text"
             className="w-full px-4 py-3 bg-surface-elevated border border-line-subtle rounded-xl text-sm text-ink-primary placeholder:text-ink-placeholder focus:outline-none focus:border-line-focus"
-            placeholder="e.g. Dining Out"
+            placeholder={
+              isSubcategory
+                ? "e.g. Breakfast, Petrol, Electricity, Train"
+                : "e.g. Food & Dining, Travel, Bills"
+            }
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-normal text-ink-subtle pl-1">Type</label>
-          <div className="flex bg-surface-elevated border border-line-subtle p-1 rounded-full self-start">
-            {["expense", "income", "both"].map((opt) => (
-              <button
-                type="button"
-                key={opt}
-                onClick={() => setType(opt)}
-                className={`px-4 py-1.5 rounded-full text-xs font-normal capitalize cursor-pointer transition-colors ${
-                  type === opt ? "bg-cta text-cta-ink" : "text-ink-subtle hover:text-ink-secondary"
-                }`}
-              >
-                {opt}
-              </button>
-            ))}
+        {/* Type Selector (Only for Top-Level Categories) */}
+        {!isSubcategory && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-normal text-ink-subtle pl-1">Type</label>
+            <div className="flex bg-surface-elevated border border-line-subtle p-1 rounded-full self-start">
+              {["expense", "income", "both"].map((opt) => (
+                <button
+                  type="button"
+                  key={opt}
+                  onClick={() => setType(opt)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-normal capitalize cursor-pointer transition-colors ${
+                    type === opt ? "bg-cta text-cta-ink" : "text-ink-subtle hover:text-ink-secondary"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
+        {/* Monthly Budget Limit (Supported for both Category and Subcategory) */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-normal text-ink-subtle pl-1">
-            Monthly Budget Limit (optional)
+            {isSubcategory
+              ? "Subcategory Monthly Budget Limit (optional)"
+              : "Monthly Budget Limit (optional)"}
           </label>
           <input
             type="number"
@@ -109,10 +214,13 @@ export default function AddCategoryPane({ category: editCategory = null }) {
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-normal text-ink-subtle pl-1">Icon</label>
-          <IconPicker selected={icon} onSelect={setIcon} />
-        </div>
+        {/* Icon Picker (Only for Top-Level Categories) */}
+        {!isSubcategory && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-normal text-ink-subtle pl-1">Icon</label>
+            <IconPicker selected={icon} onSelect={setIcon} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 pt-4 border-t border-line-subtle">
@@ -133,6 +241,8 @@ export default function AddCategoryPane({ category: editCategory = null }) {
             ? "Saving..."
             : editCategory
             ? "Save Changes"
+            : isSubcategory
+            ? "Add Subcategory"
             : "Add Category"}
         </button>
       </div>

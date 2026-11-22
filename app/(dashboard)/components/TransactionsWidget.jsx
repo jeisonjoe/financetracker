@@ -37,6 +37,12 @@ function mapTransaction(txn) {
         ? txMeta.category
         : txMeta.category?.name) ||
       "Uncategorized",
+    subcategory:
+      txn.subcategory ||
+      (typeof txMeta.subcategory === "string"
+        ? txMeta.subcategory
+        : txMeta.subcategory?.name) ||
+      null,
     wallet:
       txn.wallet ||
       (typeof txMeta.wallet === "string"
@@ -105,6 +111,22 @@ export default function TransactionsWidget({
     wallet: walletFilter,
     category: categoryFilter,
   });
+
+  const categoryFilterOptions = useMemo(() => {
+    const parents = categories.filter((c) => !c.parent_id && !c.parentId);
+    const children = categories.filter((c) => c.parent_id || c.parentId);
+    const opts = [];
+    for (const p of parents) {
+      opts.push({ key: p.name, name: p.name });
+      const subs = children.filter(
+        (c) => String(c.parent_id || c.parentId) === String(p.id)
+      );
+      for (const s of subs) {
+        opts.push({ key: s.name, name: `↳ ${s.name} (${p.name})` });
+      }
+    }
+    return opts;
+  }, [categories]);
 
   const items = useMemo(() => {
     if (!data?.pages) return [];
@@ -218,12 +240,12 @@ export default function TransactionsWidget({
                   />
                 </div>
 
-                <div className="w-36 sm:w-44">
+                <div className="w-36 sm:w-48">
                   <Dropdown
                     ariaLabel="Filter by category"
                     options={[
                       { key: "", name: "All Categories" },
-                      ...categories.map((c) => ({ key: c.name, name: c.name })),
+                      ...categoryFilterOptions,
                     ]}
                     value={{
                       key: categoryFilter,
@@ -326,7 +348,10 @@ export default function TransactionsWidget({
                                   {item.wallet.replace("Debit Card", "Card")}
                                 </span>
                                 {item.category !== "Uncategorized" && (
-                                  <span>• {item.category}</span>
+                                  <span>
+                                    • {item.category}
+                                    {item.subcategory ? ` › ${item.subcategory}` : ""}
+                                  </span>
                                 )}
                               </>
                             )}

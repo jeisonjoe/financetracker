@@ -2,6 +2,7 @@
 
 import Calendar from "@/app/components/Calender";
 import Dropdown from "@/app/components/Dropdown";
+import HierarchicalCategorySelect from "@/app/components/HierarchicalCategorySelect";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import {
@@ -71,14 +72,12 @@ export default function AddTransactionSidebar(props) {
   const [splitPerson, setSplitPerson] = useState("");
   const [splitType, setSplitType] = useState("lent");
 
-  const categories = useMemo(() => {
-    const filtered = rawCategories.filter((c) => {
+  const filteredCategories = useMemo(() => {
+    return rawCategories.filter((c) => {
       if (type === "income") return c.type === "income" || c.type === "both";
       if (type === "expense") return c.type === "expense" || c.type === "both";
       return true;
     });
-    const source = filtered.length > 0 ? filtered : rawCategories;
-    return source.map((c) => ({ key: c.name, name: c.name }));
   }, [rawCategories, type]);
 
   const wallets = useMemo(
@@ -108,11 +107,24 @@ export default function AddTransactionSidebar(props) {
       });
       setType(transaction.type || "expense");
 
-      const catVal =
+      const meta = transaction.full_transaction || transaction.transaction || {};
+      const catName =
         typeof transaction.category === "string"
-          ? { key: transaction.category, name: transaction.category }
-          : transaction.category;
-      setCategory(catVal || {});
+          ? transaction.category
+          : transaction.category?.name || meta.category?.name || meta.category || "";
+      const subName =
+        transaction.subcategory ||
+        meta.subcategory?.name ||
+        meta.subcategory ||
+        null;
+
+      setCategory({
+        key: subName ? `${catName} > ${subName}` : catName,
+        name: catName,
+        category: catName,
+        subcategory: subName,
+        label: subName ? `${catName} › ${subName}` : catName,
+      });
 
       const walVal =
         typeof transaction.wallet === "string"
@@ -127,7 +139,6 @@ export default function AddTransactionSidebar(props) {
           ? { key: toWalRaw, name: toWalRaw }
           : toWalRaw;
       setToWallet(toWalVal || {});
-      const meta = transaction.full_transaction || transaction.transaction || {};
       setIsSplit(Boolean(meta.is_split || transaction.is_split));
       setSplitPerson(meta.split_person || transaction.split_person || "");
       setSplitType(meta.split_type || transaction.split_type || (transaction.type === "income" ? "settlement" : "lent"));
@@ -147,12 +158,22 @@ export default function AddTransactionSidebar(props) {
 
   // Keep selected category aligned with the active transaction type
   useEffect(() => {
-    if (type === "transfer" || categories.length === 0) return;
-    const stillValid = categories.some((c) => c.name === category?.name);
-    if (!transaction && (!category?.name || !stillValid)) {
-      setCategory(categories[0]);
+    if (type === "transfer" || filteredCategories.length === 0) return;
+    const catName = category?.name || category?.category;
+    const stillValid = filteredCategories.some((c) => c.name === catName);
+    if (!transaction && (!catName || !stillValid)) {
+      const defaultParent = filteredCategories.find((c) => !c.parent_id && !c.parentId) || filteredCategories[0];
+      if (defaultParent) {
+        setCategory({
+          key: defaultParent.name,
+          name: defaultParent.name,
+          category: defaultParent.name,
+          subcategory: null,
+          label: defaultParent.name,
+        });
+      }
     }
-  }, [transaction, type, categories, category?.name]);
+  }, [transaction, type, filteredCategories, category]);
 
   // Default to last-used wallet when creating a new transaction
   useEffect(() => {
@@ -232,7 +253,20 @@ export default function AddTransactionSidebar(props) {
       transaction: {
         note: data.note || (isTransfer ? transferLabel : ""),
         time: data.time || formatCurrentTime(),
-        category: isTransfer ? { key: "Transfer", name: "Transfer" } : category,
+        category: isTransfer
+          ? { key: "Transfer", name: "Transfer" }
+          : {
+              key: category.name || category.category || "Uncategorized",
+              name: category.name || category.category || "Uncategorized",
+            },
+        ...(category.subcategory
+          ? {
+              subcategory: {
+                key: category.subcategory,
+                name: category.subcategory,
+              },
+            }
+          : {}),
         wallet,
         ...(isTransfer ? { to_wallet: toWallet } : {}),
         payee: data.note || (isTransfer ? transferLabel : ""),
@@ -403,11 +437,11 @@ export default function AddTransactionSidebar(props) {
             <>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-normal text-ink-subtle pl-1">
-                  Category
+                  Category &amp; Subcategory
                 </label>
-                <Dropdown
-                  options={categories}
-                  placeholder="Select"
+                <HierarchicalCategorySelect
+                  categories={filteredCategories}
+                  placeholder="Select Category & Subcategory"
                   value={category}
                   onChange={setCategory}
                 />
