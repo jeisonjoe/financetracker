@@ -54,13 +54,14 @@
   --theme-red-soft: rgba(248, 113, 113, 0.12);
 
   /* Wallet Card Surfaces & Peeking Deck */
-  --theme-wallet-card-bg: linear-gradient(135deg, #1c1b22 0%, #121215 100%);
-  --theme-wallet-deck-0: linear-gradient(135deg, #23202e 0%, #18171f 50%, #111115 100%);
-  --theme-wallet-deck-1: linear-gradient(135deg, #1c2329 0%, #151a1f 50%, #101215 100%);
-  --theme-wallet-deck-2: linear-gradient(135deg, #281f21 0%, #1b1618 50%, #121011 100%);
-  --theme-wallet-peek-bg: linear-gradient(90deg, #f4f4f5 0%, #e4e4e7 50%, #d4d4d8 100%);
-  --theme-wallet-peek-ink: #18181b;
-  --theme-wallet-peek-muted: #52525b;
+  --theme-wallet-card-bg: linear-gradient(135deg, #1e1e28 0%, #14131c 50%, #0d0c13 100%);
+  --theme-wallet-deck-0: linear-gradient(135deg, #1e1e28 0%, #14131c 50%, #0d0c13 100%);
+  --theme-wallet-deck-1: linear-gradient(135deg, #15202b 0%, #0f161e 50%, #090e13 100%);
+  --theme-wallet-deck-2: linear-gradient(135deg, #241b1d 0%, #191214 50%, #0f0a0c 100%);
+  --theme-wallet-deck-3: linear-gradient(135deg, #14221b 0%, #0e1712 50%, #080f0c 100%);
+  --theme-wallet-peek-bg: linear-gradient(135deg, #23222d 0%, #181720 100%);
+  --theme-wallet-peek-ink: #f4f4f5;
+  --theme-wallet-peek-muted: #a1a1aa;
 
   /* Chrome, Shadows & Loader */
   --theme-scrollbar-thumb: #27272a;
@@ -154,6 +155,10 @@ body {
 
 .wallet-deck-2 {
   background: var(--theme-wallet-deck-2);
+}
+
+.wallet-deck-3 {
+  background: var(--theme-wallet-deck-3);
 }
 
 .wallet-peek-surface {

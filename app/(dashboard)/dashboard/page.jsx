@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BiCheckCircle, BiPlus, BiTrendingUp } from "react-icons/bi";
+import { BiBot, BiCheckCircle, BiPlus, BiTrendingUp } from "react-icons/bi";
 import { toast } from "sonner";
 import { cFormat, formatAmountParts, getCurrencySymbol } from "@/app/utils/currencyFormat";
 import {
@@ -22,6 +22,7 @@ const QUICK_GOAL_CHIPS = [500, 1000, 5000];
 
 const PERIOD_LABELS = {
   this_month: "This Month",
+  salary_cycle: "Salary Cycle",
   last_month: "Last Month",
   last_3_months: "Last 3 Months",
   all_time: "All Time",
@@ -39,6 +40,19 @@ export default function Page() {
 
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [contribAmount, setContribAmount] = useState("");
+  const [cachedInsight, setCachedInsight] = useState(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(
+        `fintrack_ai_insights_v1:${user?.id || "anon"}:${period}`
+      );
+      setCachedInsight(raw ? JSON.parse(raw)?.insights || null : null);
+    } catch {
+      setCachedInsight(null);
+    }
+  }, [user?.id, period]);
 
   const summary = data?.summary || {
     availableBalance: 0,
@@ -431,15 +445,25 @@ export default function Page() {
                   : "bg-ink-muted";
 
                 return (
-                  <div key={cat.name} className="flex flex-col gap-1.5">
+                  <Link
+                    key={cat.name}
+                    href={`/dashboard/transactions?category=${encodeURIComponent(cat.name)}`}
+                    className="group flex flex-col gap-1.5 p-2 -mx-2 rounded-xl hover:bg-surface-hover/70 transition-colors cursor-pointer"
+                    title={`View ${cat.name} transactions`}
+                  >
                     <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
                       <div className="flex items-center gap-2 min-w-0">
                         <RenderIcon
                           icon={cat.icon}
                           name={cat.name}
-                          props={{ className: "text-base text-ink-muted shrink-0" }}
+                          props={{
+                            className:
+                              "text-base text-ink-muted shrink-0 group-hover:text-ink-secondary transition-colors",
+                          }}
                         />
-                        <span className="text-ink-body truncate">{cat.name}</span>
+                        <span className="text-ink-body group-hover:text-ink-primary font-normal transition-colors truncate">
+                          {cat.name}
+                        </span>
                         {cat.overBudget && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-10 text-red-100 shrink-0">
                             Over
@@ -447,7 +471,7 @@ export default function Page() {
                         )}
                       </div>
                       <div className="text-right tabular-nums shrink-0">
-                        <span className="font-medium text-ink-secondary">
+                        <span className="font-medium text-ink-secondary group-hover:text-ink-primary transition-colors">
                           {cFormat(cat.spent, { currency })}
                         </span>
                         <span className="text-xs text-ink-subtle ml-1">
@@ -464,7 +488,7 @@ export default function Page() {
                         style={{ width: `${Math.min(100, fillPct)}%` }}
                       />
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -473,7 +497,7 @@ export default function Page() {
       </div>
 
       {/* Middle Section: Recent Transactions + Wallets Card Deck */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-7 flex flex-col gap-3 min-w-0">
           <div className="flex items-center justify-between px-1">
             <span className="text-base font-normal text-ink-body">
@@ -486,12 +510,14 @@ export default function Page() {
               View all →
             </Link>
           </div>
-          <div className="h-[290px]">
-            <TransactionsWidget compact={true} pageSize={8} />
+          <div className="h-[285px]">
+            <Suspense fallback={null}>
+              <TransactionsWidget compact={true} pageSize={8} />
+            </Suspense>
           </div>
         </div>
 
-        <div className="lg:col-span-5 flex flex-col justify-end">
+        <div className="lg:col-span-5 flex flex-col min-w-0">
           <StreamsWidget />
         </div>
       </div>
@@ -646,6 +672,44 @@ export default function Page() {
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* AI Insights Highlight Strip */}
+      <div className="bg-surface-elevated/45 border border-line-subtle rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-xl bg-tint flex items-center justify-center text-ink-secondary shrink-0">
+            <BiBot size={19} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-ink-primary">
+                {cachedInsight
+                  ? `AI Financial Health: ${cachedInsight.healthScore}/100 (${cachedInsight.healthLabel})`
+                  : "AI Spend Analysis & Statement Importer"}
+              </span>
+            </div>
+            <p className="text-xs text-ink-subtle mt-0.5 truncate">
+              {cachedInsight
+                ? cachedInsight.headline
+                : "Upload PDF, CSV, or Excel bank statements or generate AI spending & usage trend insights."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Link
+            href="/import"
+            className="px-4 py-2 rounded-full bg-surface hover:bg-surface-hover border border-line-subtle text-xs text-ink-body transition-colors"
+          >
+            Import Statement
+          </Link>
+          <Link
+            href="/dashboard/insights"
+            className="px-4 py-2 rounded-full bg-cta hover:bg-cta-hover text-cta-ink text-xs font-medium transition-colors"
+          >
+            {cachedInsight ? "View Full Analysis →" : "Analyze Trends →"}
+          </Link>
         </div>
       </div>
 

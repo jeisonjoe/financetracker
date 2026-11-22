@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BiEdit, BiSearch, BiTrash } from "react-icons/bi";
 import { toast } from "sonner";
 import { cFormat } from "@/app/utils/currencyFormat";
@@ -50,6 +51,7 @@ function mapTransaction(txn) {
       "",
     note: txn.note || txMeta.note || "",
     payee: txn.payee || txMeta.payee || "",
+    closing_balance: txMeta.closing_balance ?? null,
     full_transaction: txMeta,
   };
 }
@@ -60,12 +62,23 @@ export default function TransactionsWidget({
   compact = false,
   pageSize = 20,
 }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const urlCategory = searchParams?.get("category") || "";
   const [filter, setFilter] = useState("");
   const [walletFilter, setWalletFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState(urlCategory);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  useEffect(() => {
+    if (urlCategory && urlCategory !== categoryFilter) {
+      setCategoryFilter(urlCategory);
+    }
+  }, [urlCategory]);
 
   const { open } = useRhsSidebarStore();
   const { deleteTransaction } = useTransactionMutations();
@@ -216,7 +229,19 @@ export default function TransactionsWidget({
                       key: categoryFilter,
                       name: categoryFilter || "All Categories",
                     }}
-                    onChange={(opt) => setCategoryFilter(opt.key)}
+                    onChange={(opt) => {
+                      setCategoryFilter(opt.key);
+                      if (pathname && searchParams) {
+                        const nextParams = new URLSearchParams(searchParams.toString());
+                        if (opt.key) {
+                          nextParams.set("category", opt.key);
+                        } else {
+                          nextParams.delete("category");
+                        }
+                        const qs = nextParams.toString();
+                        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+                      }
+                    }}
                     triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-line-subtle hover:bg-surface-hover text-xs sm:text-sm text-ink-body px-3.5 py-2 rounded-full focus:outline-none cursor-pointer transition-colors"
                   />
                 </div>
@@ -310,12 +335,19 @@ export default function TransactionsWidget({
                       </div>
 
                       <div className="text-right flex items-center gap-2 shrink-0">
-                        <span
-                          className={`${amountClass} text-sm font-medium whitespace-nowrap group-hover:hidden tabular-nums`}
-                        >
-                          {sign}
-                          {cFormat(item.amount, { currency })}
-                        </span>
+                        <div className="flex flex-col items-end group-hover:hidden">
+                          <span
+                            className={`${amountClass} text-sm font-medium whitespace-nowrap tabular-nums`}
+                          >
+                            {sign}
+                            {cFormat(item.amount, { currency })}
+                          </span>
+                          {item.closing_balance !== null && item.closing_balance !== undefined && (
+                            <span className="text-[11px] text-ink-subtle tabular-nums">
+                              Bal {cFormat(item.closing_balance, { currency })}
+                            </span>
+                          )}
+                        </div>
 
                         <div className="hidden group-hover:flex gap-1">
                           <button
