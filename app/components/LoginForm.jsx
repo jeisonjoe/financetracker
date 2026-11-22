@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -11,6 +11,12 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "Sign In | FinTrack";
+    }
+  }, []);
 
   const handleData = (key, value) => {
     setData((prev) => ({ ...prev, [key]: value }));

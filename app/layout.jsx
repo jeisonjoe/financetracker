@@ -1,13 +1,9 @@
-"use client";
-
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 
 import "./globals.css";
 import "./styles/styles.scss";
-import { Toaster } from "sonner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import AuthContextProvider from "./contexts/AuthContext";
+import ClientProviders from "./components/ClientProviders";
 
 const aeonik = localFont({
   variable: "--font-aeonik",
@@ -26,14 +22,13 @@ const inter = Inter({
   weight: ["300", "400", "500", "600"],
 });
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30 * 1000,
-      refetchOnWindowFocus: false,
-    },
+export const metadata = {
+  title: {
+    template: "%s | FinTrack",
+    default: "FinTrack - Personal Finance & Expense Tracker",
   },
-});
+  description: "Personal finance and intelligent expense tracking with quiet clarity.",
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -41,21 +36,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${aeonik.variable} ${inter.variable} ${aeonik.className} antialiased bg-app-bg text-ink-primary`}
       >
-        <QueryClientProvider client={queryClient}>
-          <AuthContextProvider>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                style: {
-                  background: "var(--theme-surface-elevated)",
-                  color: "var(--theme-ink-primary)",
-                  border: "1px solid var(--theme-border-default)",
-                },
-              }}
-            />
-            {children}
-          </AuthContextProvider>
-        </QueryClientProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

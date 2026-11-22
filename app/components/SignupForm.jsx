@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { validateEmail } from "../utils/util";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,12 @@ export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "Create Account | FinTrack";
+    }
+  }, []);
 
   const handleData = (key, value) => {
     setData((prev) => ({ ...prev, [key]: value }));

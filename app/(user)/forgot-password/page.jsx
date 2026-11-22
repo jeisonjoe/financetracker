@@ -3,13 +3,19 @@
 import AuthLayout from "@/app/components/AuthLayout";
 import { AuthApi } from "@/app/services/ApiClient";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [devResetUrl, setDevResetUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "Forgot Password | FinTrack";
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

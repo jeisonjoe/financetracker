@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { BiBell, BiMenu } from "react-icons/bi";
 import { usePathname } from "next/navigation";
@@ -17,6 +18,12 @@ export default function Header({ onOpenMobileNav }) {
   const navItems = [...nav, ...navBottom];
   const currentPath = navItems.find((item) => item.url === pathname);
   const pageTitle = currentPath?.name || "Overview";
+
+  useEffect(() => {
+    if (typeof document !== "undefined" && pageTitle) {
+      document.title = `${pageTitle} | FinTrack`;
+    }
+  }, [pageTitle]);
 
   const overdueCount = planning?.recurringSummary?.overdueCount || 0;
   const dueSoonCount = planning?.recurringSummary?.dueSoonCount || 0;

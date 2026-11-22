@@ -3,7 +3,7 @@
 import AuthLayout from "@/app/components/AuthLayout";
 import { AuthApi } from "@/app/services/ApiClient";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 function ResetPasswordForm() {
@@ -12,6 +12,12 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = "Reset Password | FinTrack";
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

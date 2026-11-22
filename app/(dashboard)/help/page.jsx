@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Help & Documentation",
+};
+
 const HELP_SECTIONS = [
   {
     title: "Adding & Editing Transactions",
@@ -12,9 +16,9 @@ const HELP_SECTIONS = [
       "Switch between wallets directly from the Overview card deck. Organize icons under Categories and set monthly limits under Budgets to calculate your safe daily spending pace.",
   },
   {
-    title: "Importing Google Pay Activity",
+    title: "Importing Bank Statements & Google Pay",
     description:
-      "Place your Google Pay My Activity.html file inside app/dataImports/ and open Import Data from the sidebar to preview and deduplicate entries.",
+      "Upload PDF, CSV, or Excel bank statements under Import Data using your Gemini or Claude API key, or import your Google Pay activity export with automatic deduplication.",
   },
   {
     title: "Switching Between MySQL & Supabase",
