@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import PeriodSelector from "@/app/components/PeriodSelector";
 import ProgressRing from "@/app/components/ProgressRing";
+import TopMerchantsBarChart from "@/app/components/charts/TopMerchantsBarChart";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAnalytics } from "@/app/hooks/useFinanceData";
 import { AiApi } from "@/app/services/ApiClient";
@@ -235,8 +236,16 @@ export default function InsightsPage() {
               No merchant transactions recorded in this period.
             </p>
           ) : (
-            <div className="flex flex-col gap-2.5">
-              {topMerchants.map((m, idx) => (
+            <div className="flex flex-col gap-3">
+              <div className="pb-2 border-b border-line-faint">
+                <TopMerchantsBarChart
+                  merchants={topMerchants}
+                  currency={currency}
+                  height={160}
+                />
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {topMerchants.map((m, idx) => (
                 <div
                   key={`${m.name}-${idx}`}
                   className="bg-surface border border-line-faint rounded-xl p-3 flex items-center justify-between gap-3"
@@ -261,6 +270,7 @@ export default function InsightsPage() {
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           )}
         </div>

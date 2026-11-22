@@ -9,6 +9,7 @@ import ActionModal from "@/app/components/ActionModal";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import PeriodSelector from "@/app/components/PeriodSelector";
 import RenderIcon from "@/app/components/RenderIcon";
+import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   useAnalytics,
@@ -411,6 +412,15 @@ export default function CategoriesPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
+              <div className="pb-2 border-b border-line-faint">
+                <CategoryDoughnutChart
+                  categories={breakdown}
+                  currency={currency}
+                  height={160}
+                  cutout="70%"
+                />
+              </div>
+
               {breakdown.map((item) => (
                 <div key={item.name} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">

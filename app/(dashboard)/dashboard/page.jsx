@@ -15,6 +15,8 @@ import AnimatedNumber from "@/app/components/AnimatedNumber";
 import Modal from "@/app/components/Modal";
 import PeriodSelector from "@/app/components/PeriodSelector";
 import RenderIcon from "@/app/components/RenderIcon";
+import CashflowBarChart from "@/app/components/charts/CashflowBarChart";
+import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 import StreamsWidget from "../components/StreamsWidget";
 import TransactionsWidget from "../components/TransactionsWidget";
 
@@ -361,51 +363,16 @@ export default function Page() {
             </div>
 
             {maxTrendValue === 0 ? (
-              <div className="h-24 flex items-center justify-center text-xs text-ink-faint rounded-xl bg-surface/60 border border-line-faint">
-                No income or expenses recorded in this 14-day window yet.
+              <div className="h-32 flex items-center justify-center text-xs text-ink-faint rounded-xl bg-surface/60 border border-line-faint">
+                No income or expenses recorded in this window yet.
               </div>
             ) : (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex gap-1.5 h-24 items-end px-1">
-                  {dailyTrend.map((day) => {
-                    const incomeHeight =
-                      day.income > 0
-                        ? Math.max(8, Math.round((day.income / maxTrendValue) * 100))
-                        : 0;
-                    const expenseHeight =
-                      day.expense > 0
-                        ? Math.max(8, Math.round((day.expense / maxTrendValue) * 100))
-                        : 0;
-                    return (
-                      <div
-                        key={day.date}
-                        onMouseEnter={() => setHoveredDay(day)}
-                        onMouseLeave={() => setHoveredDay(null)}
-                        title={`${day.label}: Income ${cFormat(day.income, {
-                          currency,
-                        })}, Expense ${cFormat(day.expense, { currency })}`}
-                        className="flex-1 h-full flex items-end justify-center gap-0.5 rounded-md hover:bg-tint-subtle px-0.5 transition-colors cursor-default"
-                      >
-                        <div
-                          className="w-1.5 rounded-t-full bg-green-100/80 transition-all duration-300"
-                          style={{ height: `${incomeHeight}%` }}
-                        />
-                        <div
-                          className="w-1.5 rounded-t-full bg-ink-secondary transition-all duration-300"
-                          style={{ height: `${expenseHeight}%` }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between text-[11px] text-ink-faint px-1">
-                  <span>{dailyTrend[0]?.label || ""}</span>
-                  <span>
-                    {dailyTrend[Math.floor(dailyTrend.length / 2)]?.label || ""}
-                  </span>
-                  <span>{dailyTrend[dailyTrend.length - 1]?.label || ""}</span>
-                </div>
-              </div>
+              <CashflowBarChart
+                dailyTrend={dailyTrend}
+                currency={currency}
+                height={140}
+                onHoverDay={setHoveredDay}
+              />
             )}
           </div>
         </div>
@@ -434,63 +401,72 @@ export default function Page() {
               </span>
             </div>
           ) : (
-            <div className="flex flex-col gap-3.5">
-              {categoryBreakdown.slice(0, 5).map((cat) => {
-                const hasBudget = cat.budget > 0;
-                const fillPct = hasBudget ? cat.budgetPercent : cat.sharePercent;
-                const barColor = cat.overBudget
-                  ? "bg-red-100"
-                  : hasBudget && cat.budgetPercent >= 80
-                  ? "bg-accent"
-                  : "bg-ink-muted";
+            <div className="flex flex-col gap-4">
+              <CategoryDoughnutChart
+                categories={categoryBreakdown}
+                currency={currency}
+                height={145}
+                cutout="74%"
+              />
 
-                return (
-                  <Link
-                    key={cat.name}
-                    href={`/dashboard/transactions?category=${encodeURIComponent(cat.name)}`}
-                    className="group flex flex-col gap-1.5 p-2 -mx-2 rounded-xl hover:bg-surface-hover/70 transition-colors cursor-pointer"
-                    title={`View ${cat.name} transactions`}
-                  >
-                    <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <RenderIcon
-                          icon={cat.icon}
-                          name={cat.name}
-                          props={{
-                            className:
-                              "text-base text-ink-muted shrink-0 group-hover:text-ink-secondary transition-colors",
-                          }}
-                        />
-                        <span className="text-ink-body group-hover:text-ink-primary font-normal transition-colors truncate">
-                          {cat.name}
-                        </span>
-                        {cat.overBudget && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-10 text-red-100 shrink-0">
-                            Over
+              <div className="flex flex-col gap-2.5">
+                {categoryBreakdown.slice(0, 4).map((cat) => {
+                  const hasBudget = cat.budget > 0;
+                  const fillPct = hasBudget ? cat.budgetPercent : cat.sharePercent;
+                  const barColor = cat.overBudget
+                    ? "bg-red-100"
+                    : hasBudget && cat.budgetPercent >= 80
+                    ? "bg-accent"
+                    : "bg-ink-muted";
+
+                  return (
+                    <Link
+                      key={cat.name}
+                      href={`/dashboard/transactions?category=${encodeURIComponent(cat.name)}`}
+                      className="group flex flex-col gap-1.5 p-1.5 -mx-1.5 rounded-xl hover:bg-surface-hover/70 transition-colors cursor-pointer"
+                      title={`View ${cat.name} transactions`}
+                    >
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <RenderIcon
+                            icon={cat.icon}
+                            name={cat.name}
+                            props={{
+                              className:
+                                "text-sm text-ink-muted shrink-0 group-hover:text-ink-secondary transition-colors",
+                            }}
+                          />
+                          <span className="text-ink-body group-hover:text-ink-primary font-normal transition-colors truncate">
+                            {cat.name}
                           </span>
-                        )}
+                          {cat.overBudget && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-10 text-red-100 shrink-0">
+                              Over
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right tabular-nums shrink-0">
+                          <span className="font-medium text-ink-secondary group-hover:text-ink-primary transition-colors">
+                            {cFormat(cat.spent, { currency })}
+                          </span>
+                          <span className="text-xs text-ink-subtle ml-1">
+                            {hasBudget
+                              ? `/ ${cFormat(cat.budget, { currency })}`
+                              : `(${cat.sharePercent}%)`}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right tabular-nums shrink-0">
-                        <span className="font-medium text-ink-secondary group-hover:text-ink-primary transition-colors">
-                          {cFormat(cat.spent, { currency })}
-                        </span>
-                        <span className="text-xs text-ink-subtle ml-1">
-                          {hasBudget
-                            ? `/ ${cFormat(cat.budget, { currency })}`
-                            : `(${cat.sharePercent}%)`}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="w-full h-1.5 rounded-full bg-tint overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${barColor}`}
-                        style={{ width: `${Math.min(100, fillPct)}%` }}
-                      />
-                    </div>
-                  </Link>
-                );
-              })}
+                      <div className="w-full h-1 rounded-full bg-tint overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${barColor}`}
+                          style={{ width: `${Math.min(100, fillPct)}%` }}
+                        />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
