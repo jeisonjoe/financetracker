@@ -14,6 +14,7 @@ const ROUTE_HEADLINES = {
   "/dashboard/transactions": "Every transaction, clearly organized.",
   "/dashboard/wallets": "Manage your wallets and balances.",
   "/dashboard/categories": "Organize icons, types, and categories.",
+  "/dashboard/debts": "Track money lent to friends and borrowed funds.",
   "/dashboard/budgets": "Set monthly limits and track spending.",
   "/dashboard/planning": "Organize, plan, and grow your funds.",
   "/dashboard/insights": "AI-powered spending analysis and trends.",

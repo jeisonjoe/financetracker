@@ -26,6 +26,10 @@ export const nav = [
     url: "/dashboard/categories",
   },
   {
+    name: "Debts & Loans",
+    url: "/dashboard/debts",
+  },
+  {
     name: "Planning",
     url: "/dashboard/planning",
   },
