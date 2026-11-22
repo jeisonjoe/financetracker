@@ -9,7 +9,7 @@ const VALID_TYPES = new Set(["income", "expense", "transfer"]);
  * Supabase implementation of ITransactionRepository.
  */
 export class SupabaseTransactionRepository extends ITransactionRepository {
-  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "" } = {}) {
+  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "", tag = "" } = {}) {
     const supabase = await SupabaseServerClient.create();
     const limit = Math.max(1, Math.min(Number(pageSize) || 20, 500));
     const offset = Math.max(0, Number(page) || 0) * limit;
@@ -24,9 +24,9 @@ export class SupabaseTransactionRepository extends ITransactionRepository {
       query = query.eq("type", type);
     }
 
-    // Apply JSON filtering in JS when search/wallet/category filters are active
+    // Apply JSON filtering in JS when search/wallet/category/tag filters are active
     // so PostgREST JSON path differences never break across Postgres versions.
-    const needsClientFilter = Boolean(search?.trim() || wallet?.trim() || category?.trim());
+    const needsClientFilter = Boolean(search?.trim() || wallet?.trim() || category?.trim() || tag?.trim());
 
     if (!needsClientFilter) {
       query = query.range(offset, offset + limit - 1);
@@ -44,14 +44,17 @@ export class SupabaseTransactionRepository extends ITransactionRepository {
     if (error) throw new AppError(error.message, 500);
 
     const searchLower = search.trim().toLowerCase();
+    const cleanTag = tag.trim().replace(/^#/, "").toLowerCase();
     const filtered = (data || [])
       .map((row) => new TransactionEntity(row))
       .filter((tx) => {
         if (searchLower) {
           const matchNote = tx.note.toLowerCase().includes(searchLower);
           const matchPayee = tx.payee.toLowerCase().includes(searchLower);
-          if (!matchNote && !matchPayee) return false;
+          const matchTag = tx.tags?.some((t) => t.toLowerCase().includes(searchLower));
+          if (!matchNote && !matchPayee && !matchTag) return false;
         }
+        if (cleanTag && !tx.tags?.some((t) => t.toLowerCase() === cleanTag)) return false;
         if (wallet && tx.wallet.name !== wallet && tx.toWallet?.name !== wallet) return false;
         if (category && tx.category.name !== category) return false;
         return true;

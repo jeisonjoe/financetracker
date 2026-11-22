@@ -114,6 +114,34 @@ export class MySqlSchema {
         "ALTER TABLE categories ADD COLUMN parent_id BIGINT UNSIGNED NULL DEFAULT NULL AFTER user_id, ADD INDEX idx_categories_parent (parent_id)"
       );
     }
+
+    // 7. Add credit_limit, statement_day, due_day to wallets if missing
+    const creditCols = await MySqlClient.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'wallets' AND COLUMN_NAME = 'credit_limit'`
+    );
+    if (creditCols.length === 0) {
+      await MySqlClient.execute(
+        "ALTER TABLE wallets ADD COLUMN credit_limit BIGINT NOT NULL DEFAULT 0, ADD COLUMN statement_day INT NULL DEFAULT NULL, ADD COLUMN due_day INT NULL DEFAULT NULL"
+      );
+    }
+
+    // 8. Create user-configurable merchant_rules table
+    await MySqlClient.execute(`
+      CREATE TABLE IF NOT EXISTS merchant_rules (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        user_id CHAR(36) NOT NULL,
+        pattern VARCHAR(255) NOT NULL,
+        category VARCHAR(150) NOT NULL,
+        subcategory VARCHAR(150) NULL,
+        payee VARCHAR(150) NULL,
+        default_note VARCHAR(255) NULL,
+        tags JSON NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_merchant_rules_user (user_id)
+      )
+    `);
   }
 }
 

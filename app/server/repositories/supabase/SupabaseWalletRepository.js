@@ -19,9 +19,20 @@ export class SupabaseWalletRepository extends IWalletRepository {
     return (data || []).map((row) => new WalletEntity(row));
   }
 
-  async create(userId, { name, type = "debit", openingBalance = 0 }) {
+  async create(
+    userId,
+    {
+      name,
+      type = "debit",
+      openingBalance = 0,
+      creditLimit = 0,
+      statementDay = null,
+      dueDay = null,
+    }
+  ) {
     const supabase = await SupabaseServerClient.create();
     const balance = Math.round(Number(openingBalance) || 0);
+    const limit = Math.max(0, Math.round(Number(creditLimit) || 0));
     let { data, error } = await supabase
       .from("wallets")
       .insert({
@@ -29,6 +40,9 @@ export class SupabaseWalletRepository extends IWalletRepository {
         name: name.trim(),
         type,
         ...(balance ? { opening_balance: balance } : {}),
+        ...(limit ? { credit_limit: limit } : {}),
+        ...(statementDay ? { statement_day: statementDay } : {}),
+        ...(dueDay ? { due_day: dueDay } : {}),
       })
       .select()
       .single();
@@ -47,13 +61,26 @@ export class SupabaseWalletRepository extends IWalletRepository {
     return new WalletEntity(data);
   }
 
-  async update(id, userId, { name, type, openingBalance }) {
+  async update(
+    id,
+    userId,
+    { name, type, openingBalance, creditLimit, statementDay, dueDay }
+  ) {
     const supabase = await SupabaseServerClient.create();
     const patch = {};
     if (name !== undefined) patch.name = String(name).trim();
     if (type !== undefined) patch.type = type;
     if (openingBalance !== undefined) {
       patch.opening_balance = Math.round(Number(openingBalance) || 0);
+    }
+    if (creditLimit !== undefined) {
+      patch.credit_limit = Math.max(0, Math.round(Number(creditLimit) || 0));
+    }
+    if (statementDay !== undefined) {
+      patch.statement_day = statementDay ? Number(statementDay) : null;
+    }
+    if (dueDay !== undefined) {
+      patch.due_day = dueDay ? Number(dueDay) : null;
     }
 
     const { data, error } = await supabase

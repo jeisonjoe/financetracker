@@ -11,6 +11,7 @@ export async function GET(req) {
       search: sp.get("search") || "",
       wallet: sp.get("wallet") || "",
       category: sp.get("category") || "",
+      tag: sp.get("tag") || "",
     });
     return NextResponse.json(result);
   });

@@ -33,6 +33,27 @@ export default function AddCategoryPane({
     editCategory?.monthly_budget ? String(editCategory.monthly_budget) : ""
   );
   const [icon, setIcon] = useState(editCategory?.icon || null);
+  const [color, setColor] = useState(
+    editCategory?.color || editCategory?.icon?.color || "#3b82f6"
+  );
+  const [rollover, setRollover] = useState(
+    Boolean(editCategory?.rollover || editCategory?.icon?.rollover)
+  );
+
+  const COLOR_PALETTE = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#14b8a6",
+    "#f97316",
+    "#6366f1",
+    "#64748b",
+    "#0284c7",
+  ];
 
   const { isOpen, close: closeRhs, setProps } = useRhsSidebarStore();
   const { user } = useAuth();
@@ -78,11 +99,19 @@ export default function AddCategoryPane({
 
     setIsLoading(true);
     try {
+      const iconPayload = isSubcategory
+        ? selectedParent?.icon || icon
+        : {
+            ...(typeof icon === "object" && icon !== null ? icon : {}),
+            color,
+            rollover,
+          };
+
       const payload = {
         name: name.trim(),
         parent_id: isSubcategory ? String(parentId) : null,
         type: isSubcategory ? (selectedParent?.type || "expense") : type,
-        icon: isSubcategory ? (selectedParent?.icon || icon) : icon,
+        icon: iconPayload,
         monthly_budget: Number(monthlyBudget) || 0,
       };
 
@@ -216,10 +245,50 @@ export default function AddCategoryPane({
 
         {/* Icon Picker (Only for Top-Level Categories) */}
         {!isSubcategory && (
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-normal text-ink-subtle pl-1">Icon</label>
-            <IconPicker selected={icon} onSelect={setIcon} />
-          </div>
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-normal text-ink-subtle pl-1">Theme Color</label>
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                {COLOR_PALETTE.map((c) => (
+                  <button
+                    type="button"
+                    key={c}
+                    onClick={() => setColor(c)}
+                    style={{ backgroundColor: c }}
+                    className={`w-6 h-6 rounded-full cursor-pointer transition-transform ${
+                      color === c
+                        ? "scale-110 ring-2 ring-ink-primary ring-offset-2"
+                        : "opacity-80 hover:opacity-100"
+                    }`}
+                    aria-label={`Select color ${c}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-normal text-ink-subtle pl-1">Icon</label>
+              <IconPicker selected={icon} onSelect={setIcon} />
+            </div>
+
+            {/* Budget Rollover Toggle */}
+            <div className="p-3 bg-surface border border-line-subtle rounded-xl flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-ink-primary">
+                  Budget Rollover (Carryover)
+                </span>
+                <span className="text-[11px] text-ink-subtle">
+                  Carry over unspent budget or deficit to following months
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={rollover}
+                onChange={(e) => setRollover(e.target.checked)}
+                className="accent-ink-primary cursor-pointer w-4 h-4"
+              />
+            </div>
+          </>
         )}
       </div>
 

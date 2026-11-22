@@ -2,17 +2,24 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BiCalendarCheck, BiPieChartAlt2, BiTargetLock } from "react-icons/bi";
+import {
+  BiCalendarCheck,
+  BiPieChartAlt2,
+  BiTargetLock,
+  BiUserCheck,
+} from "react-icons/bi";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { usePlanningOverview } from "@/app/hooks/useFinanceData";
 import CashflowSection from "./components/CashflowSection";
 import GoalsSection from "./components/GoalsSection";
 import RecurringSection from "./components/RecurringSection";
+import DebtsSection from "./components/DebtsSection";
 
 const TABS = [
   { key: "cashflow", label: "Cashflow & Allocation", icon: BiPieChartAlt2 },
   { key: "goals", label: "Savings Goals", icon: BiTargetLock },
   { key: "recurring", label: "Recurring Bills & Income", icon: BiCalendarCheck },
+  { key: "debts", label: "Debts & Loans", icon: BiUserCheck },
 ];
 
 function PlanningContent() {
@@ -36,6 +43,7 @@ function PlanningContent() {
   const attentionBillsCount =
     (planning?.recurringSummary?.overdueCount || 0) +
     (planning?.recurringSummary?.dueSoonCount || 0);
+  const openDebtsCount = planning?.debtsSummary?.openDebtsCount || 0;
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -49,6 +57,8 @@ function PlanningContent() {
                 ? activeGoalsCount
                 : tab.key === "recurring" && attentionBillsCount > 0
                 ? attentionBillsCount
+                : tab.key === "debts" && openDebtsCount > 0
+                ? openDebtsCount
                 : null;
 
             return (
@@ -99,6 +109,8 @@ function PlanningContent() {
             <GoalsSection planning={planning} currency={currency} />
           ) : activeTab === "recurring" ? (
             <RecurringSection planning={planning} currency={currency} />
+          ) : activeTab === "debts" ? (
+            <DebtsSection planning={planning} currency={currency} />
           ) : (
             <CashflowSection
               planning={planning}

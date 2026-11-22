@@ -67,3 +67,10 @@ export class IFundPlanRepository extends BaseRepository {
   async upsert(_userId, _payload) { this.notImplemented("upsert"); }
 }
 
+export class IMerchantRuleRepository extends BaseRepository {
+  async findAllForUser(_userId) { this.notImplemented("findAllForUser"); }
+  async create(_userId, _payload) { this.notImplemented("create"); }
+  async update(_id, _userId, _payload) { this.notImplemented("update"); }
+  async delete(_id, _userId) { this.notImplemented("delete"); }
+}
+

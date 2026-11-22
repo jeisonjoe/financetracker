@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BiChevronDown, BiEdit, BiPlus, BiSearch, BiSliderAlt, BiTrash } from "react-icons/bi";
+import { BiChevronDown, BiEdit, BiGitMerge, BiPlus, BiSearch, BiSliderAlt, BiTrash } from "react-icons/bi";
 import { toast } from "sonner";
 import AddCategoryPane from "@/app/(dashboard)/components/AddCategoryPane";
 import ActionModal from "@/app/components/ActionModal";
+import Modal from "@/app/components/Modal";
+import Dropdown from "@/app/components/Dropdown";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import PeriodSelector from "@/app/components/PeriodSelector";
 import RenderIcon from "@/app/components/RenderIcon";
@@ -42,10 +44,40 @@ export default function CategoriesPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedParents, setExpandedParents] = useState(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeSource, setMergeSource] = useState("");
+  const [mergeTarget, setMergeTarget] = useState("");
+  const [merging, setMerging] = useState(false);
 
   const { data: categories = [], isLoading } = useCategoriesQuery();
   const { data: analytics } = useAnalytics(period);
-  const { deleteCategory } = useCategoryMutations();
+  const { deleteCategory, mergeCategory } = useCategoryMutations();
+
+  const handleMerge = async () => {
+    if (!mergeSource || !mergeTarget) {
+      toast.error("Please select both source and target categories");
+      return;
+    }
+    if (mergeSource === mergeTarget) {
+      toast.error("Source and target categories must be different");
+      return;
+    }
+    setMerging(true);
+    try {
+      await mergeCategory.mutateAsync({
+        sourceId: mergeSource,
+        targetId: mergeTarget,
+      });
+      toast.success("Categories merged successfully");
+      setMergeOpen(false);
+      setMergeSource("");
+      setMergeTarget("");
+    } catch (err) {
+      toast.error(err.message || "Failed to merge categories");
+    } finally {
+      setMerging(false);
+    }
+  };
 
   // Spend maps from analytics breakdown
   const spentByName = useMemo(
@@ -190,6 +222,15 @@ export default function CategoriesPage() {
 
           <button
             type="button"
+            onClick={() => setMergeOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface hover:bg-surface-hover border border-line-subtle text-xs sm:text-sm text-ink-body transition-colors cursor-pointer"
+          >
+            <BiGitMerge size={15} />
+            <span>Merge Categories</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => open(AddCategoryPane, { isSubcategory: false })}
             className="bg-cta hover:bg-cta-hover text-cta-ink inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-medium cursor-pointer transition-colors"
           >
@@ -232,7 +273,14 @@ export default function CategoriesPage() {
                     {/* Parent Header Row */}
                     <div className="p-4 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-11 h-11 rounded-xl bg-tint text-ink-secondary flex items-center justify-center shrink-0">
+                        <div
+                          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border"
+                          style={{
+                            backgroundColor: parent.color || parent.icon?.color ? `${parent.color || parent.icon?.color}15` : "var(--tint)",
+                            borderColor: parent.color || parent.icon?.color ? `${parent.color || parent.icon?.color}40` : "transparent",
+                            color: parent.color || parent.icon?.color || "var(--ink-secondary)",
+                          }}
+                        >
                           <RenderIcon
                             icon={parent.icon}
                             name={parent.name}
@@ -483,6 +531,83 @@ export default function CategoriesPage() {
         primaryAction={confirmDelete}
         secAction={() => setDeleteTarget(null)}
       />
+
+      {/* Merge Categories Modal */}
+      <Modal
+        isOpen={mergeOpen}
+        onClose={() => setMergeOpen(false)}
+        title="Merge Categories"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-ink-subtle">
+            Select a source category to merge into a target category. All past transactions and child subcategories from the source will be safely reassigned to the target category, and the source category will be removed.
+          </p>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-normal text-ink-subtle pl-1">
+              Source Category (to be deleted)
+            </label>
+            <Dropdown
+              options={parentCategories.map((p) => ({
+                key: String(p.id),
+                name: p.name,
+              }))}
+              value={
+                parentCategories.find((p) => String(p.id) === String(mergeSource))
+                  ? {
+                      key: String(mergeSource),
+                      name: parentCategories.find((p) => String(p.id) === String(mergeSource))?.name,
+                    }
+                  : { key: "", name: "Select source category" }
+              }
+              onChange={(opt) => setMergeSource(opt.key)}
+              placeholder="Select source"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-normal text-ink-subtle pl-1">
+              Target Category (to keep)
+            </label>
+            <Dropdown
+              options={parentCategories
+                .filter((p) => String(p.id) !== String(mergeSource))
+                .map((p) => ({
+                  key: String(p.id),
+                  name: p.name,
+                }))}
+              value={
+                parentCategories.find((p) => String(p.id) === String(mergeTarget))
+                  ? {
+                      key: String(mergeTarget),
+                      name: parentCategories.find((p) => String(p.id) === String(mergeTarget))?.name,
+                    }
+                  : { key: "", name: "Select target category" }
+              }
+              onChange={(opt) => setMergeTarget(opt.key)}
+              placeholder="Select target"
+            />
+          </div>
+
+          <div className="flex gap-2.5 pt-3 border-t border-line-subtle">
+            <button
+              type="button"
+              onClick={() => setMergeOpen(false)}
+              className="flex-1 py-2.5 rounded-full bg-surface-elevated text-xs font-normal text-ink-body hover:bg-surface-hover transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleMerge}
+              disabled={merging || !mergeSource || !mergeTarget}
+              className="flex-1 py-2.5 rounded-full bg-cta text-cta-ink text-xs font-medium hover:bg-cta-hover transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {merging ? "Merging..." : "Confirm Merge"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

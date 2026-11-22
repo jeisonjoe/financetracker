@@ -153,12 +153,38 @@ export default function ImportPage() {
     ).length;
   }, [statementRows]);
 
+  const reversalCount = useMemo(() => {
+    return statementRows.filter(
+      (r) => r.is_reversal || /refund|reversal|cashback/i.test(`${r.payee} ${r.note}`)
+    ).length;
+  }, [statementRows]);
+
+  const largeSpendCount = useMemo(() => {
+    return statementRows.filter(
+      (r) => Number(r.amount) >= 5000 && r.type === "expense"
+    ).length;
+  }, [statementRows]);
+
+  const duplicateCount = useMemo(() => {
+    return statementRows.filter((r) => r.isDuplicate).length;
+  }, [statementRows]);
+
   const visibleStatementRows = useMemo(() => {
     let result = statementRows;
     if (categoryFilter === "uncategorized") {
       result = result.filter(
         (r) => !r.category || r.category === "Uncategorized"
       );
+    } else if (categoryFilter === "reversals") {
+      result = result.filter(
+        (r) => r.is_reversal || /refund|reversal|cashback/i.test(`${r.payee} ${r.note}`)
+      );
+    } else if (categoryFilter === "large") {
+      result = result.filter(
+        (r) => Number(r.amount) >= 5000 && r.type === "expense"
+      );
+    } else if (categoryFilter === "duplicates") {
+      result = result.filter((r) => r.isDuplicate);
     } else if (categoryFilter !== "all") {
       result = result.filter(
         (r) => (r.category || "").toLowerCase() === categoryFilter.toLowerCase()
@@ -448,8 +474,6 @@ export default function ImportPage() {
     const updated = saveAiSettings({ ...aiSettings, provider: nextProvider });
     setAiSettings(updated);
   };
-
-  const duplicateCount = statementRows.filter((r) => r.isDuplicate).length;
 
   return (
     <div className="p-4 sm:p-8 bg-app-bg min-h-screen text-ink-primary">
@@ -854,7 +878,7 @@ export default function ImportPage() {
                       onChange={(e) => setSearchFilter(e.target.value)}
                       className="bg-surface-elevated border border-line-subtle rounded-lg px-3 py-1.5 text-xs text-ink-primary placeholder:text-ink-subtle focus:outline-none focus:border-line-focus w-60 sm:w-72"
                     />
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setCategoryFilter("all")}
@@ -877,6 +901,45 @@ export default function ImportPage() {
                           }`}
                         >
                           Uncategorized ({uncategorizedCount})
+                        </button>
+                      )}
+                      {reversalCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCategoryFilter("reversals")}
+                          className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+                            categoryFilter === "reversals"
+                              ? "bg-tint-active text-ink-primary font-medium"
+                              : "text-ink-subtle hover:text-ink-primary"
+                          }`}
+                        >
+                          Reversals ({reversalCount})
+                        </button>
+                      )}
+                      {largeSpendCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCategoryFilter("large")}
+                          className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+                            categoryFilter === "large"
+                              ? "bg-tint-active text-ink-primary font-medium"
+                              : "text-ink-subtle hover:text-ink-primary"
+                          }`}
+                        >
+                          Spends &gt; 5k ({largeSpendCount})
+                        </button>
+                      )}
+                      {duplicateCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCategoryFilter("duplicates")}
+                          className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+                            categoryFilter === "duplicates"
+                              ? "bg-amber-10 text-amber-100 font-medium"
+                              : "text-ink-subtle hover:text-ink-primary"
+                          }`}
+                        >
+                          Duplicates ({duplicateCount})
                         </button>
                       )}
                     </div>
@@ -949,8 +1012,8 @@ export default function ImportPage() {
                             <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-muted tabular-nums">
                               {row.date}
                               {row.isDuplicate && (
-                                <span className="block text-[10px] text-ink-faint">
-                                  Already in ledger
+                                <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] bg-amber-10 text-amber-100 font-medium">
+                                  Duplicate
                                 </span>
                               )}
                             </td>

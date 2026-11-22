@@ -55,7 +55,7 @@ export const AuthApi = {
 };
 
 export const TransactionApi = {
-  list: ({ page = 0, pageSize = 20, type = "", search = "", wallet = "", category = "" } = {}) => {
+  list: ({ page = 0, pageSize = 20, type = "", search = "", wallet = "", category = "", tag = "" } = {}) => {
     const params = new URLSearchParams({
       page: String(page),
       pageSize: String(pageSize),
@@ -64,6 +64,7 @@ export const TransactionApi = {
     if (search) params.set("search", search);
     if (wallet) params.set("wallet", wallet);
     if (category) params.set("category", category);
+    if (tag) params.set("tag", tag);
     return http.get(`/api/transactions?${params.toString()}`);
   },
   create: (payload) => http.post("/api/transactions", payload),
@@ -78,6 +79,7 @@ export const CategoryApi = {
   create: (payload) => http.post("/api/categories", payload),
   update: (id, payload) => http.patch(`/api/categories/${id}`, payload),
   remove: (id) => http.delete(`/api/categories/${id}`),
+  merge: (payload) => http.post("/api/categories/merge", payload),
 };
 
 export const WalletApi = {
@@ -85,6 +87,13 @@ export const WalletApi = {
   create: (payload) => http.post("/api/wallets", payload),
   update: (id, payload) => http.patch(`/api/wallets/${id}`, payload),
   remove: (id) => http.delete(`/api/wallets/${id}`),
+};
+
+export const RulesApi = {
+  list: () => http.get("/api/rules"),
+  create: (payload) => http.post("/api/rules", payload),
+  update: (id, payload) => http.patch(`/api/rules/${id}`, payload),
+  remove: (id) => http.delete(`/api/rules/${id}`),
 };
 
 export const AnalyticsApi = {
@@ -105,6 +114,7 @@ export const PlanningApi = {
   processRecurring: (id, action = "log") =>
     http.post(`/api/planning/recurring/${id}`, { action }),
   deleteRecurring: (id) => http.delete(`/api/planning/recurring/${id}`),
+  recordRepayment: (payload) => http.post("/api/planning/debts/repay", payload),
 };
 
 export const AiApi = {

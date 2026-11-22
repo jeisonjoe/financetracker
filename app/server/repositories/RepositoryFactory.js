@@ -6,6 +6,7 @@ import { MySqlWalletRepository } from "./mysql/MySqlWalletRepository.js";
 import { MySqlFundGoalRepository } from "./mysql/MySqlFundGoalRepository.js";
 import { MySqlRecurringItemRepository } from "./mysql/MySqlRecurringItemRepository.js";
 import { MySqlFundPlanRepository } from "./mysql/MySqlFundPlanRepository.js";
+import { MySqlMerchantRuleRepository } from "./mysql/MySqlMerchantRuleRepository.js";
 import { SupabaseAuthProvider } from "./supabase/SupabaseAuthProvider.js";
 import { SupabaseTransactionRepository } from "./supabase/SupabaseTransactionRepository.js";
 import { SupabaseCategoryRepository } from "./supabase/SupabaseCategoryRepository.js";
@@ -13,6 +14,7 @@ import { SupabaseWalletRepository } from "./supabase/SupabaseWalletRepository.js
 import { SupabaseFundGoalRepository } from "./supabase/SupabaseFundGoalRepository.js";
 import { SupabaseRecurringItemRepository } from "./supabase/SupabaseRecurringItemRepository.js";
 import { SupabaseFundPlanRepository } from "./supabase/SupabaseFundPlanRepository.js";
+import { SupabaseMerchantRuleRepository } from "./supabase/SupabaseMerchantRuleRepository.js";
 
 /**
  * Abstract Factory that resolves concrete MySQL or Supabase repository
@@ -31,6 +33,7 @@ export class RepositoryFactory {
         fundGoalRepo: new SupabaseFundGoalRepository(),
         recurringRepo: new SupabaseRecurringItemRepository(),
         fundPlanRepo: new SupabaseFundPlanRepository(),
+        merchantRuleRepo: new SupabaseMerchantRuleRepository(),
       };
     }
 
@@ -43,6 +46,7 @@ export class RepositoryFactory {
       fundGoalRepo: new MySqlFundGoalRepository(),
       recurringRepo: new MySqlRecurringItemRepository(),
       fundPlanRepo: new MySqlFundPlanRepository(),
+      merchantRuleRepo: new MySqlMerchantRuleRepository(),
     };
   }
 }

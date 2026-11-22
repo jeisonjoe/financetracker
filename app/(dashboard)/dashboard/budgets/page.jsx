@@ -157,6 +157,10 @@ export default function BudgetsPage() {
   const liveFreeToAllocate = plannedIncome - stats.totalBudget - plannedSavings;
 
   const breakdown = analytics?.categoryBreakdown || [];
+  const breakdownByName = useMemo(
+    () => new Map((analytics?.categoryBreakdown || []).map((b) => [b.name, b])),
+    [analytics?.categoryBreakdown]
+  );
 
   const handleSaveAllBudgets = async (e) => {
     if (e) e.preventDefault();
@@ -398,6 +402,11 @@ export default function BudgetsPage() {
                     : 0;
                 const remaining = effectiveLimit - spent;
 
+                const catMeta = breakdownByName.get(cat.name) || {};
+                const hasRollover = Boolean(catMeta.rollover ?? cat.icon?.rollover);
+                const carryover = catMeta.carryover || 0;
+                const catColor = catMeta.color || cat.icon?.color;
+
                 const rawValue =
                   draftBudgets[cat.id] !== undefined
                     ? draftBudgets[cat.id]
@@ -424,7 +433,13 @@ export default function BudgetsPage() {
                   >
                     <div className="flex items-start justify-between gap-2.5">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-tint text-ink-secondary flex items-center justify-center shrink-0">
+                        <div className="relative w-10 h-10 rounded-xl bg-tint text-ink-secondary flex items-center justify-center shrink-0">
+                          {catColor && (
+                            <span
+                              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-surface"
+                              style={{ backgroundColor: catColor }}
+                            />
+                          )}
                           <RenderIcon
                             icon={cat.icon}
                             name={cat.name}
@@ -432,8 +447,8 @@ export default function BudgetsPage() {
                           />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-medium text-ink-primary truncate">
-                            {cat.name}
+                          <div className="text-sm font-medium text-ink-primary truncate flex items-center gap-1.5">
+                            <span>{cat.name}</span>
                           </div>
                           <div className="text-xs text-ink-subtle tabular-nums">
                             Spent {cFormat(spent, { currency })}
@@ -470,6 +485,33 @@ export default function BudgetsPage() {
                         </button>
                       </div>
                     </div>
+
+                    {hasRollover && (
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-subtle bg-surface-elevated/70 px-2.5 py-1 rounded-lg border border-line-subtle">
+                        <span className="font-medium text-ink-secondary">Rollover</span>
+                        {carryover !== 0 && (
+                          <span
+                            className={
+                              carryover > 0
+                                ? "text-green-100 font-medium"
+                                : "text-red-100 font-medium"
+                            }
+                          >
+                            {carryover > 0
+                              ? `+${cFormat(carryover, { currency })}`
+                              : `-${cFormat(Math.abs(carryover), { currency })}`}
+                          </span>
+                        )}
+                        <span className="text-ink-subtle">
+                          Base: {cFormat(cat.monthly_budget || 0, { currency })}
+                        </span>
+                        {carryover !== 0 && (
+                          <span className="text-ink-subtle">
+                            • Effective: {cFormat(catMeta.budget || effectiveLimit, { currency })}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="w-full h-1.5 rounded-full bg-tint overflow-hidden">
                       <div

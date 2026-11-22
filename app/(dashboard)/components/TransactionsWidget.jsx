@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BiEdit, BiSearch, BiTrash } from "react-icons/bi";
+import { BiCopy, BiEdit, BiSearch, BiTag, BiTrash } from "react-icons/bi";
 import { toast } from "sonner";
 import { cFormat } from "@/app/utils/currencyFormat";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import {
   useCategoriesQuery,
+  useCategoryMutations,
   useTransactionMutations,
   useTransactionsInfinite,
   useWalletsQuery,
@@ -58,6 +59,18 @@ function mapTransaction(txn) {
     note: txn.note || txMeta.note || "",
     payee: txn.payee || txMeta.payee || "",
     closing_balance: txMeta.closing_balance ?? null,
+    splits: Array.isArray(txn.splits)
+      ? txn.splits
+      : Array.isArray(txMeta.splits)
+      ? txMeta.splits
+      : [],
+    tags: Array.isArray(txn.tags)
+      ? txn.tags
+      : Array.isArray(txMeta.tags)
+      ? txMeta.tags
+      : [],
+    is_adjustment: Boolean(txn.is_adjustment || txMeta.is_adjustment),
+    recurring_id: txn.recurring_id || txMeta.recurring_id || null,
     full_transaction: txMeta,
   };
 }
@@ -76,9 +89,13 @@ export default function TransactionsWidget({
   const [filter, setFilter] = useState("");
   const [walletFilter, setWalletFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(urlCategory);
+  const [tagFilter, setTagFilter] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     if (urlCategory && urlCategory !== categoryFilter) {
@@ -110,6 +127,7 @@ export default function TransactionsWidget({
     search: debouncedSearch,
     wallet: walletFilter,
     category: categoryFilter,
+    tag: tagFilter,
   });
 
   const categoryFilterOptions = useMemo(() => {
@@ -141,6 +159,69 @@ export default function TransactionsWidget({
     }
     return list;
   }, [data]);
+
+  const availableTags = useMemo(() => {
+    const set = new Set();
+    for (const item of items) {
+      for (const t of item.tags || []) {
+        set.add(t);
+      }
+    }
+    return Array.from(set);
+  }, [items]);
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((i) => i.id)));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        await deleteTransaction.mutateAsync(id);
+      }
+      toast.success(`Deleted ${ids.length} transactions`);
+      setSelectedIds(new Set());
+    } catch (err) {
+      toast.error(err.message || "Failed to delete selected transactions");
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteModalOpen(false);
+    }
+  };
+
+  const handleDuplicate = (item) => {
+    open(AddTransactionSidebar, {
+      initialValues: {
+        amount: item.amount,
+        note: item.note ? `${item.note} (Copy)` : item.payee || "Copy",
+        category: item.category,
+        subcategory: item.subcategory,
+        wallet: item.wallet,
+        type: item.type,
+        tags: item.tags,
+      },
+    });
+  };
 
   const observerTarget = useRef(null);
   useEffect(() => {
@@ -267,6 +348,24 @@ export default function TransactionsWidget({
                     triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-line-subtle hover:bg-surface-hover text-xs sm:text-sm text-ink-body px-3.5 py-2 rounded-full focus:outline-none cursor-pointer transition-colors"
                   />
                 </div>
+
+                {availableTags.length > 0 && (
+                  <div className="w-32 sm:w-40">
+                    <Dropdown
+                      ariaLabel="Filter by tag"
+                      options={[
+                        { key: "", name: "All Tags" },
+                        ...availableTags.map((t) => ({ key: t, name: `#${t}` })),
+                      ]}
+                      value={{
+                        key: tagFilter,
+                        name: tagFilter ? `#${tagFilter}` : "All Tags",
+                      }}
+                      onChange={(opt) => setTagFilter(opt.key)}
+                      triggerClass="w-full flex items-center justify-between gap-2 bg-surface border border-line-subtle hover:bg-surface-hover text-xs sm:text-sm text-ink-body px-3.5 py-2 rounded-full focus:outline-none cursor-pointer transition-colors"
+                    />
+                  </div>
+                )}
               </>
             )}
 
@@ -285,17 +384,57 @@ export default function TransactionsWidget({
           </div>
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between bg-surface border border-line-subtle px-3.5 py-2 rounded-xl text-xs sm:text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-ink-primary">
+                {selectedIds.size} selected
+              </span>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-xs text-ink-subtle hover:text-ink-body underline cursor-pointer"
+              >
+                {selectedIds.size === items.length ? "Deselect all" : "Select all"}
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setBulkDeleteModalOpen(true)}
+                className="px-3 py-1.5 rounded-full bg-red-10 hover:bg-red-20 text-red-100 text-xs font-normal cursor-pointer flex items-center gap-1 transition-colors"
+              >
+                <BiTrash size={13} />
+                <span>Delete Selected</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="px-2.5 py-1 text-xs text-ink-subtle hover:text-ink-primary cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grow overflow-y-auto scrollbar-minimal pr-1">
           {Object.entries(groupedData).map(([date, groupItems]) => (
             <div key={date} className="flex flex-col gap-1 py-1.5">
-              <div className="text-ink-subtle text-xs font-normal sticky top-0 bg-surface-elevated/95 backdrop-blur-sm py-1 px-1 rounded">
-                {date}
+              <div className="text-ink-subtle text-xs font-normal sticky top-0 bg-surface-elevated/95 backdrop-blur-sm py-1 px-1 rounded flex items-center justify-between">
+                <span>{date}</span>
+                {groupItems.length > 1 && (
+                  <span className="text-[11px] text-ink-faint">
+                    {groupItems.length} transactions
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col gap-0.5">
                 {groupItems.map((item) => {
                   const isIncome = item.type === "income";
                   const isTransfer = item.type === "transfer";
+                  const isSelected = selectedIds.has(item.id);
                   const amountClass = isIncome
                     ? "text-green-100"
                     : isTransfer
@@ -313,10 +452,21 @@ export default function TransactionsWidget({
                   return (
                     <div
                       key={item.id}
-                      className="group flex justify-between items-center w-full py-2.5 px-2.5 rounded-xl hover:bg-tint-subtle transition-colors cursor-pointer"
+                      className={`group flex justify-between items-center w-full py-2.5 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                        isSelected ? "bg-tint-active" : "hover:bg-tint-subtle"
+                      }`}
                       onDoubleClick={() => handleEdit(item)}
                     >
-                      <div className="flex gap-3 items-center flex-1 min-w-0">
+                      <div className="flex gap-2.5 items-center flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(item.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="accent-ink-primary cursor-pointer shrink-0"
+                          title="Select transaction"
+                        />
+
                         <div
                           className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs ${
                             isIncome
@@ -330,13 +480,34 @@ export default function TransactionsWidget({
                         </div>
 
                         <div className="flex flex-col min-w-0 w-full pr-3">
-                          <span
-                            className="text-ink-secondary font-normal text-sm truncate"
-                            title={item.note}
-                          >
-                            {title}
-                          </span>
-                          <span className="flex gap-1.5 items-center text-xs mt-0.5 text-ink-subtle">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className="text-ink-secondary font-normal text-sm truncate"
+                              title={item.note}
+                            >
+                              {title}
+                            </span>
+                            {item.splits && item.splits.length > 0 && (
+                              <span
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-tint text-ink-body font-normal"
+                                title={item.splits
+                                  .map(
+                                    (s) =>
+                                      `${s.category?.name || s.category}: ₹${s.amount}`
+                                  )
+                                  .join(", ")}
+                              >
+                                Split ({item.splits.length})
+                              </span>
+                            )}
+                            {item.is_adjustment && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-amber-50 text-amber-700 font-normal">
+                                Adjustment
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-1.5 items-center text-xs mt-0.5 text-ink-subtle">
                             {isTransfer && item.to_wallet ? (
                               <span>
                                 {item.wallet.replace("Debit Card", "Card")} →{" "}
@@ -355,7 +526,20 @@ export default function TransactionsWidget({
                                 )}
                               </>
                             )}
-                          </span>
+
+                            {item.tags && item.tags.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                {item.tags.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="px-1.5 py-0.2 rounded text-[10px] bg-surface border border-line-subtle text-ink-muted"
+                                  >
+                                    #{t}
+                                  </span>
+                                ))}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -375,6 +559,17 @@ export default function TransactionsWidget({
                         </div>
 
                         <div className="hidden group-hover:flex gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicate(item);
+                            }}
+                            className="p-1.5 text-ink-muted hover:text-ink-primary hover:bg-tint-hover rounded-full transition-colors cursor-pointer"
+                            title="Duplicate"
+                          >
+                            <BiCopy size={15} />
+                          </button>
                           <button
                             type="button"
                             onClick={(e) => {
@@ -442,6 +637,15 @@ export default function TransactionsWidget({
         secBtnText="Cancel"
         primaryAction={confirmDelete}
         secAction={() => setDeleteTarget(null)}
+      />
+
+      <ActionModal
+        isOpen={bulkDeleteModalOpen}
+        content={`Are you sure you want to delete ${selectedIds.size} selected transactions?`}
+        primaryBtnText={bulkDeleting ? "Deleting..." : "Delete All"}
+        secBtnText="Cancel"
+        primaryAction={confirmBulkDelete}
+        secAction={() => setBulkDeleteModalOpen(false)}
       />
     </>
   );

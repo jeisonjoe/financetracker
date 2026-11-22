@@ -5,6 +5,7 @@ import { CategoryService } from "./CategoryService.js";
 import { WalletService } from "./WalletService.js";
 import { AnalyticsService } from "./AnalyticsService.js";
 import { PlanningService } from "./PlanningService.js";
+import { RuleService } from "./RuleService.js";
 import { AiService } from "./AiService.js";
 
 /**
@@ -18,7 +19,7 @@ export class ServiceContainer {
       provider: repos.provider,
       authService: new AuthService(repos.authProvider),
       transactionService: new TransactionService(repos.transactionRepo),
-      categoryService: new CategoryService(repos.categoryRepo),
+      categoryService: new CategoryService(repos.categoryRepo, repos.transactionRepo),
       walletService: new WalletService(repos.walletRepo),
       analyticsService: new AnalyticsService(
         repos.transactionRepo,
@@ -32,6 +33,7 @@ export class ServiceContainer {
         repos.transactionRepo,
         repos.categoryRepo
       ),
+      ruleService: new RuleService(repos.merchantRuleRepo),
       aiService: new AiService(),
     };
   }

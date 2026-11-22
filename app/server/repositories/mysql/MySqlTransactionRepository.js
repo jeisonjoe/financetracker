@@ -10,7 +10,7 @@ const VALID_TYPES = new Set(["income", "expense", "transfer"]);
  * MySQL implementation of ITransactionRepository.
  */
 export class MySqlTransactionRepository extends ITransactionRepository {
-  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "" } = {}) {
+  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "", tag = "" } = {}) {
     await MySqlSchema.ensure();
     const conditions = ["user_id = ?"];
     const params = [userId];
@@ -40,6 +40,14 @@ export class MySqlTransactionRepository extends ITransactionRepository {
         "(JSON_UNQUOTE(JSON_EXTRACT(transaction, '$.category.name')) = ? OR JSON_UNQUOTE(JSON_EXTRACT(transaction, '$.category')) = ?)"
       );
       params.push(category.trim(), category.trim());
+    }
+
+    if (tag && tag.trim()) {
+      const cleanTag = tag.trim().replace(/^#/, "");
+      conditions.push(
+        "JSON_SEARCH(JSON_EXTRACT(transaction, '$.tags'), 'one', ?) IS NOT NULL"
+      );
+      params.push(cleanTag);
     }
 
     const whereClause = conditions.join(" AND ");

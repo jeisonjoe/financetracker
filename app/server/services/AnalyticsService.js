@@ -372,13 +372,24 @@ export class AnalyticsService {
 
     // Wallet balances
     const walletMap = new Map();
-    const ensureWalletEntry = (name, type = "account", openingBalance = 0, id = name) => {
+    const ensureWalletEntry = (
+      name,
+      type = "account",
+      openingBalance = 0,
+      id = name,
+      creditLimit = 0,
+      statementDay = null,
+      dueDay = null
+    ) => {
       if (!walletMap.has(name)) {
         walletMap.set(name, {
           id,
           name,
           type,
           openingBalance,
+          creditLimit,
+          statementDay,
+          dueDay,
           balance: openingBalance,
           earned: 0,
           spent: 0,
@@ -394,7 +405,15 @@ export class AnalyticsService {
     for (const w of registeredWallets) {
       const opening = Number(w.openingBalance ?? 0);
       totalOpeningBalance += opening;
-      ensureWalletEntry(w.name, w.type, opening, w.id);
+      ensureWalletEntry(
+        w.name,
+        w.type,
+        opening,
+        w.id,
+        Number(w.creditLimit || 0),
+        w.statementDay ?? null,
+        w.dueDay ?? null
+      );
     }
 
     for (const tx of allTransactions) {
@@ -424,6 +443,27 @@ export class AnalyticsService {
         if (inPeriod) entry.spent += tx.amount;
       }
     }
+
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+    for (const w of walletMap.values()) {
+      if (w.type === "credit") {
+        // Credit card debt is when balance < 0, or net spent
+        const debt = w.balance < 0 ? Math.abs(w.balance) : 0;
+        totalLiabilities += debt;
+        if (w.balance > 0) totalAssets += w.balance;
+        w.creditUtilization =
+          w.creditLimit > 0
+            ? Math.min(100, Math.round((debt / w.creditLimit) * 100))
+            : 0;
+        w.availableCredit =
+          w.creditLimit > 0 ? Math.max(0, w.creditLimit - debt) : 0;
+      } else {
+        if (w.balance >= 0) totalAssets += w.balance;
+        else totalLiabilities += Math.abs(w.balance);
+      }
+    }
+    const netWorth = totalAssets - totalLiabilities;
 
     const wallets = Array.from(walletMap.values()).sort(
       (a, b) => Math.abs(b.balance) - Math.abs(a.balance)
@@ -456,15 +496,48 @@ export class AnalyticsService {
 
     for (const tx of periodTransactions) {
       if (tx.type !== "expense") continue;
-      const catName = tx.category?.name || "Uncategorized";
-      const subName = tx.subcategory?.name || tx.meta?.subcategory?.name || tx.meta?.subcategory || null;
+      const splits = Array.isArray(tx.splits) && tx.splits.length > 0
+        ? tx.splits
+        : Array.isArray(tx.meta?.splits) && tx.meta.splits.length > 0
+        ? tx.meta.splits
+        : null;
 
-      categoryTotals.set(catName, (categoryTotals.get(catName) || 0) + tx.amount);
-      totalExpense += tx.amount;
+      if (splits) {
+        for (const split of splits) {
+          const splitAmount = Number(split.amount) || 0;
+          if (splitAmount <= 0) continue;
+          const catName =
+            typeof split.category === "string"
+              ? split.category
+              : split.category?.name || "Uncategorized";
+          const subName =
+            typeof split.subcategory === "string"
+              ? split.subcategory
+              : split.subcategory?.name || null;
 
-      if (subName) {
-        const key = `${catName}:::${subName}`;
-        subcategoryTotals.set(key, (subcategoryTotals.get(key) || 0) + tx.amount);
+          categoryTotals.set(catName, (categoryTotals.get(catName) || 0) + splitAmount);
+          totalExpense += splitAmount;
+
+          if (subName) {
+            const key = `${catName}:::${subName}`;
+            subcategoryTotals.set(key, (subcategoryTotals.get(key) || 0) + splitAmount);
+          }
+        }
+      } else {
+        const catName = tx.category?.name || "Uncategorized";
+        const subName =
+          tx.subcategory?.name ||
+          tx.meta?.subcategory?.name ||
+          tx.meta?.subcategory ||
+          null;
+
+        categoryTotals.set(catName, (categoryTotals.get(catName) || 0) + tx.amount);
+        totalExpense += tx.amount;
+
+        if (subName) {
+          const key = `${catName}:::${subName}`;
+          subcategoryTotals.set(key, (subcategoryTotals.get(key) || 0) + tx.amount);
+        }
       }
     }
 
@@ -472,8 +545,24 @@ export class AnalyticsService {
       .map(([name, spent]) => {
         const parent = parentLookup.get(name) || parentLookupLower.get(name.toLowerCase());
         const budget = parent?.monthlyBudget || 0;
+        const rollover = Boolean(parent?.rollover);
+
+        let carryover = 0;
+        if (rollover && budget > 0 && period !== "all_time") {
+          const prevSpent = previousTransactions
+            .filter((tx) => {
+              if (tx.type !== "expense") return false;
+              const cName = tx.category?.name || tx.meta?.category?.name;
+              return cName === name;
+            })
+            .reduce((sum, tx) => sum + tx.amount, 0);
+          carryover = budget - prevSpent;
+        }
+
+        const effectiveBudget = Math.max(0, budget + carryover);
         const sharePercent = totalExpense > 0 ? Math.round((spent / totalExpense) * 100) : 0;
-        const budgetPercent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : sharePercent;
+        const compareBudget = effectiveBudget > 0 ? effectiveBudget : budget;
+        const budgetPercent = compareBudget > 0 ? Math.min(100, Math.round((spent / compareBudget) * 100)) : sharePercent;
 
         // Subcategories breakdown under this parent
         const registeredSubs = parent ? subcategoriesByParentId.get(parent.id) || [] : [];
@@ -516,10 +605,14 @@ export class AnalyticsService {
           name,
           spent,
           budget,
+          effectiveBudget,
+          carryover,
+          rollover,
+          color: parent?.color || null,
           icon: parent?.icon || null,
           sharePercent,
           budgetPercent,
-          overBudget: budget > 0 && spent > budget,
+          overBudget: (compareBudget > 0 && spent > compareBudget),
           subcategories,
         };
       })
@@ -549,6 +642,9 @@ export class AnalyticsService {
         ...currentSummary,
         savingsRate,
         availableBalance,
+        totalAssets,
+        totalLiabilities,
+        netWorth,
         openingBalanceTotal: totalOpeningBalance,
         deltas: {
           balance: this.percentDelta(currentSummary.balance, previousSummary.balance),

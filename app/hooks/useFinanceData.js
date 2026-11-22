@@ -10,6 +10,7 @@ import {
   AnalyticsApi,
   CategoryApi,
   PlanningApi,
+  RulesApi,
   TransactionApi,
   WalletApi,
 } from "@/app/services/ApiClient";
@@ -20,6 +21,7 @@ export const FINANCE_QUERY_KEYS = {
   categories: ["categories"],
   wallets: ["wallets"],
   planning: ["planning"],
+  rules: ["rules"],
 };
 
 export function useAnalytics(period = "this_month") {
@@ -50,14 +52,22 @@ export function useWalletsQuery() {
   });
 }
 
+export function useRulesQuery() {
+  return useQuery({
+    queryKey: FINANCE_QUERY_KEYS.rules,
+    queryFn: () => RulesApi.list(),
+  });
+}
+
 export function useTransactionsInfinite({
   pageSize = 20,
   type = "",
   search = "",
   wallet = "",
   category = "",
+  tag = "",
 } = {}) {
-  const filters = { pageSize, type, search, wallet, category };
+  const filters = { pageSize, type, search, wallet, category, tag };
   return useInfiniteQuery({
     queryKey: FINANCE_QUERY_KEYS.transactions(filters),
     initialPageParam: 0,
@@ -69,6 +79,7 @@ export function useTransactionsInfinite({
         search,
         wallet,
         category,
+        tag,
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage?.hasMore ? allPages.length : undefined,
@@ -131,7 +142,16 @@ export function useCategoryMutations() {
     onSuccess: invalidate,
   });
 
-  return { createCategory, updateCategory, deleteCategory };
+  const mergeCategory = useMutation({
+    mutationFn: ({ sourceId, targetId }) =>
+      CategoryApi.merge({ sourceId, targetId }),
+    onSuccess: () => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+  });
+
+  return { createCategory, updateCategory, deleteCategory, mergeCategory };
 }
 
 export function useWalletMutations() {
@@ -214,6 +234,11 @@ export function usePlanningMutations() {
     onSuccess: invalidatePlanning,
   });
 
+  const recordRepayment = useMutation({
+    mutationFn: (payload) => PlanningApi.recordRepayment(payload),
+    onSuccess: invalidateWithTransactions,
+  });
+
   return {
     updatePlan,
     createGoal,
@@ -223,6 +248,32 @@ export function usePlanningMutations() {
     updateRecurring,
     processRecurring,
     deleteRecurring,
+    recordRepayment,
   };
+}
+
+export function useRuleMutations() {
+  const queryClient = useQueryClient();
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: FINANCE_QUERY_KEYS.rules });
+  };
+
+  const createRule = useMutation({
+    mutationFn: (payload) => RulesApi.create(payload),
+    onSuccess: invalidate,
+  });
+
+  const updateRule = useMutation({
+    mutationFn: ({ id, payload }) => RulesApi.update(id, payload),
+    onSuccess: invalidate,
+  });
+
+  const deleteRule = useMutation({
+    mutationFn: (id) => RulesApi.remove(id),
+    onSuccess: invalidate,
+  });
+
+  return { createRule, updateRule, deleteRule };
 }
 

@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BiBot, BiCheckCircle, BiHide, BiShow } from "react-icons/bi";
+import {
+  BiBot,
+  BiCheckCircle,
+  BiFilterAlt,
+  BiHide,
+  BiPlus,
+  BiShow,
+  BiTrash,
+} from "react-icons/bi";
 import { toast } from "sonner";
 import { useAuth } from "@/app/contexts/AuthContext";
 import Dropdown from "@/app/components/Dropdown";
+import Modal from "@/app/components/Modal";
+import ActionModal from "@/app/components/ActionModal";
 import { AiApi } from "@/app/services/ApiClient";
+import {
+  useCategoriesQuery,
+  useRuleMutations,
+  useRulesQuery,
+} from "@/app/hooks/useFinanceData";
 import {
   CLAUDE_MODELS,
   DEFAULT_AI_SETTINGS,
@@ -35,6 +50,76 @@ export default function Page() {
   const [envConfigured, setEnvConfigured] = useState({ gemini: false, claude: false });
   const [showApiKey, setShowApiKey] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
+
+  // Custom Merchant Rules
+  const { data: rules = [] } = useRulesQuery();
+  const { createRule, deleteRule } = useRuleMutations();
+  const { data: categories = [] } = useCategoriesQuery();
+  const [ruleModalOpen, setRuleModalOpen] = useState(false);
+  const [deleteRuleTarget, setDeleteRuleTarget] = useState(null);
+  const [ruleForm, setRuleForm] = useState({
+    pattern: "",
+    match_type: "contains",
+    payee: "",
+    category: "",
+    tags: "",
+    priority: "10",
+  });
+
+  const categoryOptions = useMemo(
+    () => categories.map((c) => ({ key: c.name, name: c.name })),
+    [categories]
+  );
+
+  const openAddRuleModal = () => {
+    setRuleForm({
+      pattern: "",
+      match_type: "contains",
+      payee: "",
+      category: categories[0]?.name || "Shopping",
+      tags: "",
+      priority: "10",
+    });
+    setRuleModalOpen(true);
+  };
+
+  const handleSaveRule = async (e) => {
+    e.preventDefault();
+    if (!ruleForm.pattern.trim()) {
+      toast.error("Please enter a match pattern or keyword");
+      return;
+    }
+    const tagsArr = ruleForm.tags
+      ? ruleForm.tags.split(",").map((t) => t.trim().replace(/^#/, "")).filter(Boolean)
+      : [];
+
+    try {
+      await createRule.mutateAsync({
+        pattern: ruleForm.pattern.trim(),
+        match_type: ruleForm.match_type,
+        payee: ruleForm.payee.trim() || undefined,
+        category: ruleForm.category || undefined,
+        tags: tagsArr,
+        priority: Number(ruleForm.priority) || 10,
+      });
+      toast.success(`Rule for "${ruleForm.pattern.trim()}" added`);
+      setRuleModalOpen(false);
+    } catch (err) {
+      toast.error(err.message || "Failed to save rule");
+    }
+  };
+
+  const confirmDeleteRule = async () => {
+    if (!deleteRuleTarget) return;
+    try {
+      await deleteRule.mutateAsync(deleteRuleTarget.id);
+      toast.success("Rule deleted");
+    } catch (err) {
+      toast.error(err.message || "Failed to delete rule");
+    } finally {
+      setDeleteRuleTarget(null);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -306,6 +391,84 @@ export default function Page() {
             </button>
           </div>
         </form>
+
+        {/* Merchant Categorization Rules Manager */}
+        <div className="bg-surface-elevated/50 rounded-2xl border border-line-subtle p-6 flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <BiFilterAlt size={19} className="text-ink-secondary" />
+                <h2 className="text-lg font-normal text-ink-secondary">
+                  Merchant Categorization Rules
+                </h2>
+              </div>
+              <p className="text-xs text-ink-subtle mt-0.5">
+                Automatically assign payee names, categories, and tags to transactions matching specific keywords.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={openAddRuleModal}
+              className="px-4 py-2 bg-cta hover:bg-cta-hover text-cta-ink rounded-full text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+            >
+              <BiPlus size={16} />
+              Add Rule
+            </button>
+          </div>
+
+          {rules.length === 0 ? (
+            <div className="py-8 text-center text-xs text-ink-subtle bg-surface/50 rounded-xl border border-line-subtle p-4">
+              No custom rules yet. FinTrack automatically uses built-in merchant rules (e.g., Zomato, Swiggy, Amazon, IRCTC). Click &ldquo;Add Rule&rdquo; to add your own personal patterns.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {rules.map((rule) => (
+                <div
+                  key={rule.id}
+                  className="bg-surface rounded-xl border border-line-subtle p-3.5 flex items-center justify-between gap-3 text-xs"
+                >
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="font-mono px-2 py-0.5 rounded bg-tint text-ink-primary">
+                      {rule.pattern}
+                    </span>
+                    <span className="text-ink-subtle text-[11px]">({rule.match_type})</span>
+                    <span className="text-ink-subtle">→</span>
+                    {rule.payee && (
+                      <span className="font-medium text-ink-primary">{rule.payee}</span>
+                    )}
+                    {rule.category && (
+                      <span className="px-2 py-0.5 bg-tint-subtle text-ink-secondary rounded-full">
+                        {rule.category}
+                      </span>
+                    )}
+                    {Array.isArray(rule.tags) && rule.tags.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {rule.tags.map((t) => (
+                          <span
+                            key={t}
+                            className="px-1.5 py-0.5 bg-tint-hover text-[10px] text-ink-muted rounded-full"
+                          >
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setDeleteRuleTarget(rule)}
+                    className="p-1.5 text-ink-subtle hover:text-red-100 hover:bg-tint rounded-full transition-colors cursor-pointer shrink-0"
+                    title="Delete rule"
+                  >
+                    <BiTrash size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="lg:col-span-5 flex flex-col gap-4">
@@ -349,6 +512,113 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+      {/* Add Rule Modal */}
+      <Modal
+        isOpen={ruleModalOpen}
+        onClose={() => setRuleModalOpen(false)}
+        title="Add Categorization Rule"
+        subtitle="Match future transaction descriptions to auto-assign metadata."
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleSaveRule} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-ink-subtle">
+              Match Pattern (Text or Regex)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. UBER|OLA or STARBUCKS"
+              value={ruleForm.pattern}
+              onChange={(e) =>
+                setRuleForm((prev) => ({ ...prev, pattern: e.target.value }))
+              }
+              autoFocus
+              className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary font-mono focus:outline-none focus:border-line-focus"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-ink-subtle">Match Type</label>
+              <select
+                value={ruleForm.match_type}
+                onChange={(e) =>
+                  setRuleForm((prev) => ({ ...prev, match_type: e.target.value }))
+                }
+                className="bg-surface-elevated border border-line rounded-xl px-3 py-2.5 text-sm text-ink-primary focus:outline-none"
+              >
+                <option value="contains">Contains Text</option>
+                <option value="regex">Regular Expression</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-ink-subtle">Target Payee</label>
+              <input
+                type="text"
+                placeholder="e.g. Uber"
+                value={ruleForm.payee}
+                onChange={(e) =>
+                  setRuleForm((prev) => ({ ...prev, payee: e.target.value }))
+                }
+                className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-ink-subtle">Target Category</label>
+            <Dropdown
+              options={categoryOptions}
+              value={ruleForm.category}
+              onChange={(opt) =>
+                setRuleForm((prev) => ({ ...prev, category: opt.key }))
+              }
+              triggerClass="w-full flex items-center justify-between gap-2 bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary cursor-pointer"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-ink-subtle">Tags (Comma-separated)</label>
+            <input
+              type="text"
+              placeholder="e.g. travel, work, taxi"
+              value={ruleForm.tags}
+              onChange={(e) =>
+                setRuleForm((prev) => ({ ...prev, tags: e.target.value }))
+              }
+              className="bg-surface-elevated border border-line rounded-xl px-4 py-2.5 text-sm text-ink-primary focus:outline-none focus:border-line-focus"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setRuleModalOpen(false)}
+              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createRule.isPending}
+              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97] disabled:opacity-60"
+            >
+              {createRule.isPending ? "Adding..." : "Add Rule"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <ActionModal
+        isOpen={Boolean(deleteRuleTarget)}
+        content={`Delete rule "${deleteRuleTarget?.pattern}"? Future transactions will not match this rule.`}
+        primaryBtnText="Delete"
+        secBtnText="Cancel"
+        primaryAction={confirmDeleteRule}
+        secAction={() => setDeleteRuleTarget(null)}
+      />
     </div>
   );
 }

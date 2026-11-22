@@ -103,6 +103,12 @@ export class TransactionEntity {
         ? { key: meta.to_wallet.key || toWalletName, name: toWalletName }
         : { key: toWalletName, name: toWalletName }
       : null;
+    this.splits = Array.isArray(meta.splits) ? meta.splits : [];
+    this.tags = Array.isArray(meta.tags)
+      ? meta.tags.map((t) => String(t).trim()).filter(Boolean)
+      : [];
+    this.isAdjustment = Boolean(meta.is_adjustment);
+    this.recurringId = meta.recurring_id ? String(meta.recurring_id) : null;
     this.meta = meta;
   }
 
@@ -125,6 +131,10 @@ export class TransactionEntity {
       wallet_obj: this.wallet,
       to_wallet: this.toWallet ? this.toWallet.name : null,
       to_wallet_obj: this.toWallet,
+      splits: this.splits,
+      tags: this.tags,
+      is_adjustment: this.isAdjustment,
+      recurring_id: this.recurringId,
       transaction: {
         ...this.meta,
         note: this.note,
@@ -135,6 +145,10 @@ export class TransactionEntity {
         wallet: this.wallet,
         ...(this.toWallet ? { to_wallet: this.toWallet } : {}),
         ...(this.externalId ? { external_id: this.externalId } : {}),
+        splits: this.splits,
+        tags: this.tags,
+        ...(this.isAdjustment ? { is_adjustment: true } : {}),
+        ...(this.recurringId ? { recurring_id: this.recurringId } : {}),
       },
     };
   }
@@ -156,6 +170,8 @@ export class CategoryEntity {
     this.type = row.type || "expense";
     this.icon = parseJsonColumn(row.icon, null);
     this.monthlyBudget = Number(row.monthly_budget ?? row.monthlyBudget ?? 0);
+    this.rollover = Boolean(this.icon?.rollover ?? row.rollover);
+    this.color = this.icon?.color || row.color || null;
     this.createdAt = row.created_at
       ? new Date(row.created_at).toISOString()
       : null;
@@ -170,6 +186,8 @@ export class CategoryEntity {
       type: this.type,
       icon: this.icon,
       monthly_budget: this.monthlyBudget,
+      rollover: this.rollover,
+      color: this.color,
       created_at: this.createdAt,
     };
   }
@@ -185,6 +203,15 @@ export class WalletEntity {
     this.name = row.name || "";
     this.type = row.type || "debit";
     this.openingBalance = Number(row.opening_balance ?? row.openingBalance ?? 0);
+    this.creditLimit = Number(row.credit_limit ?? row.creditLimit ?? 0);
+    this.statementDay =
+      row.statement_day !== undefined && row.statement_day !== null
+        ? Number(row.statement_day)
+        : null;
+    this.dueDay =
+      row.due_day !== undefined && row.due_day !== null
+        ? Number(row.due_day)
+        : null;
     this.createdAt = row.created_at
       ? new Date(row.created_at).toISOString()
       : null;
@@ -197,6 +224,9 @@ export class WalletEntity {
       name: this.name,
       type: this.type,
       opening_balance: this.openingBalance,
+      credit_limit: this.creditLimit,
+      statement_day: this.statementDay,
+      due_day: this.dueDay,
       created_at: this.createdAt,
     };
   }
@@ -391,6 +421,41 @@ export class FundPlanEntity {
       reserve_buffer: this.reserveBuffer,
       category_buckets: this.categoryBuckets,
       updated_at: this.updatedAt,
+    };
+  }
+}
+
+/**
+ * Domain entity representing a user-configurable merchant auto-categorization rule.
+ */
+export class MerchantRuleEntity {
+  constructor(row = {}) {
+    this.id = row.id !== undefined && row.id !== null ? String(row.id) : null;
+    this.userId = row.user_id ? String(row.user_id) : null;
+    this.pattern = String(row.pattern || "");
+    this.category = String(row.category || "Uncategorized");
+    this.subcategory = row.subcategory ? String(row.subcategory) : null;
+    this.payee = row.payee ? String(row.payee) : null;
+    this.defaultNote = row.default_note ?? row.defaultNote ?? null;
+    this.tags = Array.isArray(row.tags)
+      ? row.tags
+      : parseJsonColumn(row.tags, []);
+    this.isActive = Boolean(row.is_active ?? row.isActive ?? true);
+    this.createdAt = row.created_at ? new Date(row.created_at).toISOString() : null;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      user_id: this.userId,
+      pattern: this.pattern,
+      category: this.category,
+      subcategory: this.subcategory,
+      payee: this.payee,
+      default_note: this.defaultNote,
+      tags: this.tags,
+      is_active: this.isActive,
+      created_at: this.createdAt,
     };
   }
 }

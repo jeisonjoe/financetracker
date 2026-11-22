@@ -515,12 +515,103 @@ export class PlanningService {
       },
     };
 
+    // Debts & loans summary across all historical transactions
+    const allUserTxns = await this.transactionRepo.findInDateRange(
+      userId,
+      null,
+      null,
+      null
+    );
+    const personMap = new Map();
+    let totalLent = 0;
+    let totalBorrowed = 0;
+    let totalSettled = 0;
+
+    for (const tx of allUserTxns) {
+      const meta = tx.meta || tx.transaction || {};
+      const isSplit = Boolean(meta.is_split ?? tx.is_split);
+      const person = (meta.split_person || tx.split_person || "").trim();
+      if (!isSplit || !person) continue;
+
+      const splitType =
+        meta.split_type ||
+        tx.split_type ||
+        (tx.type === "income" ? "settlement" : "lent");
+      const isSettled = Boolean(meta.settled ?? tx.settled);
+
+      if (!personMap.has(person)) {
+        personMap.set(person, {
+          person,
+          lent: 0,
+          borrowed: 0,
+          settled: 0,
+          balance: 0,
+          transactionCount: 0,
+          transactions: [],
+          lastDate: tx.createdAt,
+        });
+      }
+
+      const pEntry = personMap.get(person);
+      pEntry.transactionCount += 1;
+      pEntry.transactions.push({
+        id: tx.id,
+        date: tx.createdAt,
+        amount: tx.amount,
+        type: splitType,
+        note: meta.note || meta.payee || tx.note,
+        settled: isSettled,
+      });
+
+      if (splitType === "lent") {
+        if (!isSettled) {
+          totalLent += tx.amount;
+          pEntry.lent += tx.amount;
+          pEntry.balance += tx.amount;
+        } else {
+          totalSettled += tx.amount;
+          pEntry.settled += tx.amount;
+        }
+      } else if (splitType === "borrowed") {
+        if (!isSettled) {
+          totalBorrowed += tx.amount;
+          pEntry.borrowed += tx.amount;
+          pEntry.balance -= tx.amount;
+        } else {
+          totalSettled += tx.amount;
+          pEntry.settled += tx.amount;
+        }
+      } else if (splitType === "settlement") {
+        totalSettled += tx.amount;
+        pEntry.settled += tx.amount;
+        pEntry.balance -= tx.amount;
+      }
+    }
+
+    const debtsByPerson = Array.from(personMap.values())
+      .map((p) => ({
+        ...p,
+        status:
+          p.balance > 0 ? "owes_you" : p.balance < 0 ? "you_owe" : "settled",
+      }))
+      .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
+
+    const debtsSummary = {
+      totalLent,
+      totalBorrowed,
+      totalSettled,
+      netBalance: totalLent - totalBorrowed,
+      contactsCount: debtsByPerson.length,
+      byPerson: debtsByPerson,
+    };
+
     return {
       plan,
       goals,
       goalsSummary,
       recurring,
       recurringSummary,
+      debtsSummary,
       cashflow: {
         incomeSource,
         plannedIncome,
@@ -537,6 +628,43 @@ export class PlanningService {
         allocationBuckets,
       },
     };
+  }
+
+  async recordDebtRepayment(userId, body) {
+    const contact = String(body.contact || "").trim();
+    if (!contact) throw new ValidationError("Contact name is required");
+    const amount = Math.round(Number(body.amount) || 0);
+    if (amount <= 0) throw new ValidationError("Amount must be greater than zero");
+    const direction =
+      body.direction === "repayment_sent"
+        ? "repayment_sent"
+        : "repayment_received";
+    const type = direction === "repayment_received" ? "income" : "expense";
+    const wallet = String(body.wallet || "Cash").trim();
+    const note = String(
+      body.note ||
+        (direction === "repayment_received"
+          ? `Settlement repayment from ${contact}`
+          : `Settlement repayment to ${contact}`)
+    ).trim();
+
+    const created = await this.transactionRepo.create(userId, {
+      type,
+      amount,
+      created_at: new Date().toISOString(),
+      transaction: {
+        payee: contact,
+        note,
+        category: { key: "Debt Settlement", name: "Debt Settlement" },
+        wallet: { key: wallet, name: wallet },
+        is_split: true,
+        split_person: contact,
+        split_type: "settlement",
+        settled: true,
+      },
+    });
+
+    return created.toJSON();
   }
 }
 

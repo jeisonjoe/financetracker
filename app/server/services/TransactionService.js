@@ -74,6 +74,53 @@ export class TransactionService {
     const reversalRef = rawMeta.reversal_ref ?? body.reversal_ref ?? cleaned.reference ?? "";
     const isSalary = Boolean(rawMeta.is_salary ?? body.is_salary ?? cleaned.isSalary);
 
+    // Tags
+    const rawTags = rawMeta.tags ?? body.tags ?? [];
+    const tags = Array.isArray(rawTags)
+      ? rawTags.map((t) => String(t).trim().replace(/^#/, "")).filter(Boolean)
+      : typeof rawTags === "string"
+      ? rawTags.split(",").map((t) => t.trim().replace(/^#/, "")).filter(Boolean)
+      : [];
+
+    // Multi-category splits
+    const rawSplits = rawMeta.splits ?? body.splits ?? [];
+    let splits = [];
+    if (Array.isArray(rawSplits) && rawSplits.length > 0) {
+      splits = rawSplits
+        .map((s) => {
+          const splitAmount = Math.round(Number(s.amount) || 0);
+          const splitCatName =
+            typeof s.category === "string"
+              ? s.category
+              : s.category?.name || "Uncategorized";
+          const splitSubName =
+            typeof s.subcategory === "string"
+              ? s.subcategory
+              : s.subcategory?.name || null;
+          return {
+            category: { key: splitCatName, name: splitCatName },
+            ...(splitSubName
+              ? { subcategory: { key: splitSubName, name: splitSubName } }
+              : {}),
+            amount: splitAmount,
+            note: s.note ? String(s.note).trim() : "",
+          };
+        })
+        .filter((s) => s.amount > 0);
+
+      if (splits.length > 0) {
+        const splitSum = splits.reduce((sum, s) => sum + s.amount, 0);
+        if (Math.abs(splitSum - Math.round(amount)) > 1) {
+          throw new ValidationError(
+            `Sum of splits (${splitSum}) does not match total amount (${Math.round(amount)})`
+          );
+        }
+      }
+    }
+
+    const isAdjustment = Boolean(rawMeta.is_adjustment ?? body.is_adjustment ?? false);
+    const recurringId = rawMeta.recurring_id ?? body.recurring_id ?? null;
+
     const categoryName =
       typeof rawMeta.category === "string"
         ? rawMeta.category
@@ -104,6 +151,10 @@ export class TransactionService {
       is_reversal: isReversal,
       reversal_ref: reversalRef,
       is_salary: isSalary,
+      tags,
+      splits,
+      is_adjustment: isAdjustment,
+      ...(recurringId ? { recurring_id: String(recurringId) } : {}),
     };
 
     return {

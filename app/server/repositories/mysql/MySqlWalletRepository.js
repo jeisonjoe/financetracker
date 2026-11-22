@@ -11,7 +11,7 @@ export class MySqlWalletRepository extends IWalletRepository {
   async findAllForUser(userId) {
     await MySqlSchema.ensure();
     const rows = await MySqlClient.query(
-      `SELECT id, user_id, name, type, opening_balance, created_at
+      `SELECT id, user_id, name, type, opening_balance, credit_limit, statement_day, due_day, created_at
        FROM wallets
        WHERE user_id = ? OR user_id IS NULL
        ORDER BY name ASC`,
@@ -20,22 +20,40 @@ export class MySqlWalletRepository extends IWalletRepository {
     return rows.map((row) => new WalletEntity(row));
   }
 
-  async create(userId, { name, type = "debit", openingBalance = 0 }) {
+  async create(
+    userId,
+    {
+      name,
+      type = "debit",
+      openingBalance = 0,
+      creditLimit = 0,
+      statementDay = null,
+      dueDay = null,
+    }
+  ) {
     await MySqlSchema.ensure();
     const balance = Math.round(Number(openingBalance) || 0);
+    const limit = Math.max(0, Math.round(Number(creditLimit) || 0));
+    const stmtDay = statementDay ? Math.min(31, Math.max(1, Number(statementDay))) : null;
+    const pDueDay = dueDay ? Math.min(31, Math.max(1, Number(dueDay))) : null;
+
     const result = await MySqlClient.execute(
-      "INSERT INTO wallets (user_id, name, type, opening_balance) VALUES (?, ?, ?, ?)",
-      [userId, name.trim(), type, balance]
+      "INSERT INTO wallets (user_id, name, type, opening_balance, credit_limit, statement_day, due_day) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [userId, name.trim(), type, balance, limit, stmtDay, pDueDay]
     );
 
     const rows = await MySqlClient.query(
-      "SELECT id, user_id, name, type, opening_balance, created_at FROM wallets WHERE id = ? LIMIT 1",
+      "SELECT id, user_id, name, type, opening_balance, credit_limit, statement_day, due_day, created_at FROM wallets WHERE id = ? LIMIT 1",
       [result.insertId]
     );
     return new WalletEntity(rows[0]);
   }
 
-  async update(id, userId, { name, type, openingBalance }) {
+  async update(
+    id,
+    userId,
+    { name, type, openingBalance, creditLimit, statementDay, dueDay }
+  ) {
     await MySqlSchema.ensure();
     const updates = [];
     const params = [];
@@ -52,10 +70,22 @@ export class MySqlWalletRepository extends IWalletRepository {
       updates.push("opening_balance = ?");
       params.push(Math.round(Number(openingBalance) || 0));
     }
+    if (creditLimit !== undefined) {
+      updates.push("credit_limit = ?");
+      params.push(Math.max(0, Math.round(Number(creditLimit) || 0)));
+    }
+    if (statementDay !== undefined) {
+      updates.push("statement_day = ?");
+      params.push(statementDay ? Math.min(31, Math.max(1, Number(statementDay))) : null);
+    }
+    if (dueDay !== undefined) {
+      updates.push("due_day = ?");
+      params.push(dueDay ? Math.min(31, Math.max(1, Number(dueDay))) : null);
+    }
 
     if (updates.length === 0) {
       const existing = await MySqlClient.query(
-        "SELECT id, user_id, name, type, opening_balance, created_at FROM wallets WHERE id = ? AND (user_id = ? OR user_id IS NULL) LIMIT 1",
+        "SELECT id, user_id, name, type, opening_balance, credit_limit, statement_day, due_day, created_at FROM wallets WHERE id = ? AND (user_id = ? OR user_id IS NULL) LIMIT 1",
         [id, userId]
       );
       if (!existing.length) throw new NotFoundError("Wallet not found");
@@ -72,7 +102,7 @@ export class MySqlWalletRepository extends IWalletRepository {
     }
 
     const rows = await MySqlClient.query(
-      "SELECT id, user_id, name, type, opening_balance, created_at FROM wallets WHERE id = ? LIMIT 1",
+      "SELECT id, user_id, name, type, opening_balance, credit_limit, statement_day, due_day, created_at FROM wallets WHERE id = ? LIMIT 1",
       [id]
     );
     return new WalletEntity(rows[0]);
