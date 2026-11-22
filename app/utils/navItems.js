@@ -29,6 +29,10 @@ export const nav = [
     name: "Planning",
     url: "/dashboard/planning",
   },
+  {
+    name: "Insights",
+    url: "/dashboard/insights",
+  },
 ];
 
 export const navBottom = [

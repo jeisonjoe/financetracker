@@ -16,6 +16,7 @@ const ROUTE_HEADLINES = {
   "/dashboard/categories": "Organize icons, types, and categories.",
   "/dashboard/budgets": "Set monthly limits and track spending.",
   "/dashboard/planning": "Organize, plan, and grow your funds.",
+  "/dashboard/insights": "AI-powered spending analysis and trends.",
   "/dashboard/preferences": "Personalize your workspace.",
   "/help": "Guides and quick tips.",
   "/import": "Bring in your transaction history.",
