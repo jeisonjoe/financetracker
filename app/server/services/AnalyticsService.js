@@ -1,6 +1,8 @@
+import { MerchantRuleService } from "./MerchantRuleService.js";
+
 /**
  * Computes date ranges and aggregated financial analytics across periods,
- * wallets, and spending categories.
+ * wallets, spending categories, salary cycles, merchant intelligence, and friend splits.
  */
 export class AnalyticsService {
   constructor(transactionRepo, categoryRepo, walletRepo) {
@@ -9,7 +11,7 @@ export class AnalyticsService {
     this.walletRepo = walletRepo;
   }
 
-  getPeriodBounds(period = "this_month") {
+  getPeriodBounds(period = "this_month", referenceTransactions = []) {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
@@ -18,6 +20,7 @@ export class AnalyticsService {
       return {
         start: new Date(year, month - 1, 1, 0, 0, 0, 0),
         end: new Date(year, month, 0, 23, 59, 59, 999),
+        isSalaryCycle: false,
       };
     }
 
@@ -25,16 +28,49 @@ export class AnalyticsService {
       return {
         start: new Date(year, month - 2, 1, 0, 0, 0, 0),
         end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+        isSalaryCycle: false,
       };
     }
 
     if (period === "all_time") {
-      return { start: null, end: null };
+      return { start: null, end: null, isSalaryCycle: false };
+    }
+
+    if (period === "salary_cycle") {
+      // Find latest salary credit to anchor payday-to-payday cycle
+      const salaryTxns = (referenceTransactions || [])
+        .filter((tx) => {
+          const meta = tx.meta || tx.transaction || {};
+          const isSalary =
+            Boolean(meta.is_salary) ||
+            tx.category?.name?.toLowerCase() === "salary" ||
+            /ADMINWARE|SALARY/i.test(`${tx.payee || meta.payee || ""} ${tx.note || meta.note || ""}`);
+          return tx.type === "income" && isSalary;
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      if (salaryTxns.length > 0) {
+        const latestSalary = salaryTxns[0];
+        const salaryDate = new Date(latestSalary.createdAt);
+        const start = new Date(salaryDate.getFullYear(), salaryDate.getMonth(), salaryDate.getDate(), 0, 0, 0, 0);
+        // Next projected salary date (approx 1 month later)
+        const nextSalaryDate = new Date(salaryDate.getFullYear(), salaryDate.getMonth() + 1, salaryDate.getDate(), 23, 59, 59, 999);
+        return {
+          start,
+          end: nextSalaryDate,
+          isSalaryCycle: true,
+          salaryAmount: latestSalary.amount,
+          payday: salaryDate.getDate(),
+          lastSalaryDate: start.toISOString(),
+          nextSalaryDate: nextSalaryDate.toISOString(),
+        };
+      }
     }
 
     return {
       start: new Date(year, month, 1, 0, 0, 0, 0),
       end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+      isSalaryCycle: false,
     };
   }
 
@@ -42,16 +78,39 @@ export class AnalyticsService {
     let income = 0;
     let expense = 0;
     let transfers = 0;
+    let reversals = 0;
+
     for (const tx of transactions) {
-      if (tx.type === "income") income += tx.amount;
-      else if (tx.type === "transfer") transfers += tx.amount;
-      else expense += tx.amount;
+      const meta = tx.meta || tx.transaction || {};
+      const payee = tx.payee || meta.payee || "";
+      const note = tx.note || meta.note || "";
+      const isReversal =
+        Boolean(meta.is_reversal) ||
+        tx.category?.name === "Refund / Reversal" ||
+        payee.toLowerCase().startsWith("reversal:") ||
+        note.toUpperCase().startsWith("REV-UPI");
+
+      if (isReversal) {
+        reversals += tx.amount;
+      } else if (tx.type === "income") {
+        income += tx.amount;
+      } else if (tx.type === "transfer") {
+        transfers += tx.amount;
+      } else {
+        expense += tx.amount;
+      }
     }
+
+    // Net out reversal refunds so failed transactions don't inflate expense or income totals
+    const netExpense = Math.max(0, expense - reversals);
+
     return {
       income,
-      expense,
+      expense: netExpense,
+      grossExpense: expense,
+      reversals,
       transfers,
-      balance: income - expense,
+      balance: income - netExpense,
       count: transactions.length,
     };
   }
@@ -61,8 +120,156 @@ export class AnalyticsService {
     return Math.round(((current - previous) / Math.abs(previous)) * 100);
   }
 
+  computeSplitsSummary(allTransactions) {
+    const splitsSummary = {
+      totalLent: 0,
+      totalBorrowed: 0,
+      totalSettled: 0,
+      byPerson: [],
+    };
+    const personMap = new Map();
+
+    for (const tx of allTransactions) {
+      const meta = tx.meta || tx.transaction || {};
+      const combinedText = `${tx.note || meta.note || ""} ${tx.payee || meta.payee || ""}`;
+      const isSplit =
+        Boolean(meta.is_split) ||
+        /LENDING|LENT|BORROW|HOMIES|SPLIT|ROOMMATE/i.test(combinedText);
+      if (!isSplit) continue;
+
+      const rawPerson = meta.split_person || tx.payee || meta.payee || "Friend";
+      const person = MerchantRuleService.titleCase(rawPerson);
+      const splitType =
+        meta.split_type || (tx.type === "income" ? "settlement" : "lent");
+      const isSettled = Boolean(meta.settled);
+
+      if (!personMap.has(person)) {
+        personMap.set(person, {
+          person,
+          lent: 0,
+          borrowed: 0,
+          settled: 0,
+          balance: 0, // positive = they owe user, negative = user owes them
+          transactionCount: 0,
+          transactions: [],
+          lastDate: tx.createdAt,
+        });
+      }
+
+      const pEntry = personMap.get(person);
+      pEntry.transactionCount += 1;
+      pEntry.transactions.push({
+        id: tx.id,
+        date: tx.createdAt,
+        amount: tx.amount,
+        type: splitType,
+        note: meta.note || meta.payee,
+        settled: isSettled,
+      });
+
+      if (splitType === "lent") {
+        if (!isSettled) {
+          splitsSummary.totalLent += tx.amount;
+          pEntry.lent += tx.amount;
+          pEntry.balance += tx.amount;
+        } else {
+          splitsSummary.totalSettled += tx.amount;
+          pEntry.settled += tx.amount;
+        }
+      } else if (splitType === "borrowed") {
+        if (!isSettled) {
+          splitsSummary.totalBorrowed += tx.amount;
+          pEntry.borrowed += tx.amount;
+          pEntry.balance -= tx.amount;
+        } else {
+          splitsSummary.totalSettled += tx.amount;
+          pEntry.settled += tx.amount;
+        }
+      } else if (splitType === "settlement") {
+        splitsSummary.totalSettled += tx.amount;
+        pEntry.settled += tx.amount;
+        pEntry.balance -= tx.amount;
+      }
+    }
+
+    splitsSummary.byPerson = Array.from(personMap.values())
+      .map((p) => ({
+        ...p,
+        status: p.balance > 0 ? "owes_you" : p.balance < 0 ? "you_owe" : "settled",
+      }))
+      .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
+
+    return splitsSummary;
+  }
+
+  computeMerchantIntelligence(periodTransactions, currentExpense) {
+    const merchantMap = new Map();
+    let microSpendCount = 0;
+    let microSpendTotal = 0;
+    const microMerchantMap = new Map();
+
+    for (const tx of periodTransactions) {
+      if (tx.type !== "expense") continue;
+      const rawPayee = tx.payee || tx.meta?.payee || tx.transaction?.payee || tx.note || "Unknown";
+      const payee = MerchantRuleService.titleCase(rawPayee.slice(0, 40));
+      const catName = tx.category?.name || "Uncategorized";
+
+      if (!merchantMap.has(payee)) {
+        merchantMap.set(payee, {
+          name: payee,
+          category: catName,
+          totalSpent: 0,
+          transactionCount: 0,
+          avgTicketSize: 0,
+        });
+      }
+      const m = merchantMap.get(payee);
+      m.totalSpent += tx.amount;
+      m.transactionCount += 1;
+
+      if (tx.amount <= 200) {
+        microSpendCount += 1;
+        microSpendTotal += tx.amount;
+        microMerchantMap.set(payee, (microMerchantMap.get(payee) || 0) + tx.amount);
+      }
+    }
+
+    for (const m of merchantMap.values()) {
+      m.avgTicketSize = Math.round(m.totalSpent / m.transactionCount);
+    }
+
+    const topMerchants = Array.from(merchantMap.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 8);
+
+    const topMicroSpots = Array.from(microMerchantMap.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    const microSpendSummary = {
+      threshold: 200,
+      count: microSpendCount,
+      totalAmount: microSpendTotal,
+      percentOfExpenses:
+        currentExpense > 0 ? Math.round((microSpendTotal / currentExpense) * 100) : 0,
+      topMicroSpots,
+      avgMicroSpend: microSpendCount > 0 ? Math.round(microSpendTotal / microSpendCount) : 0,
+    };
+
+    return { topMerchants, microSpendSummary };
+  }
+
   async getDashboardOverview(userId, period = "this_month") {
-    const { start, end } = this.getPeriodBounds(period);
+    const [allTransactions, registeredCategories, registeredWallets] = await Promise.all([
+      this.transactionRepo.findInDateRange(userId, null, null, null),
+      this.categoryRepo.findAllForUser(userId),
+      this.walletRepo.findAllForUser(userId),
+    ]);
+
+    const bounds = this.getPeriodBounds(period, allTransactions);
+    const { start, end } = bounds;
+
     const prevBounds =
       period === "last_month"
         ? {
@@ -70,12 +277,6 @@ export class AnalyticsService {
             end: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 0, 23, 59, 59, 999),
           }
         : this.getPeriodBounds("last_month");
-
-    const [allTransactions, registeredCategories, registeredWallets] = await Promise.all([
-      this.transactionRepo.findInDateRange(userId, null, null, null),
-      this.categoryRepo.findAllForUser(userId),
-      this.walletRepo.findAllForUser(userId),
-    ]);
 
     const periodTransactions = allTransactions.filter((tx) => {
       const time = new Date(tx.createdAt).getTime();
@@ -96,16 +297,31 @@ export class AnalyticsService {
     const previousSummary = this.summarizeTotals(previousTransactions);
     const allTimeSummary = this.summarizeTotals(allTransactions);
 
-    // Monthly spending pace & burn rate calculation
+    // Monthly or Salary-Cycle spending pace calculation
     const now = new Date();
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysElapsed = Math.max(1, now.getDate());
-    const daysRemaining = Math.max(1, lastDayOfMonth - now.getDate() + 1);
+    let daysElapsed = Math.max(1, now.getDate());
+    let daysRemaining = Math.max(1, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() + 1);
+    let totalCycleDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+    if (bounds.isSalaryCycle && bounds.start && bounds.end) {
+      const totalMs = bounds.end.getTime() - bounds.start.getTime();
+      totalCycleDays = Math.max(1, Math.round(totalMs / (1000 * 60 * 60 * 24)));
+      const elapsedMs = Math.max(0, now.getTime() - bounds.start.getTime());
+      daysElapsed = Math.max(1, Math.min(totalCycleDays, Math.round(elapsedMs / (1000 * 60 * 60 * 24))));
+      daysRemaining = Math.max(1, totalCycleDays - daysElapsed);
+    }
+
     const configuredBudgetTotal = registeredCategories
       .filter((c) => c.type !== "income" && c.name?.trim().toLowerCase() !== "transfer")
       .reduce((sum, c) => sum + (Number(c.monthlyBudget) || 0), 0);
+
     const spendingCap =
-      configuredBudgetTotal > 0 ? configuredBudgetTotal : currentSummary.income;
+      bounds.isSalaryCycle && bounds.salaryAmount
+        ? bounds.salaryAmount
+        : configuredBudgetTotal > 0
+        ? configuredBudgetTotal
+        : currentSummary.income;
+
     const remainingBudget = spendingCap - currentSummary.expense;
     const dailyAllowance =
       spendingCap > 0 && remainingBudget > 0
@@ -118,13 +334,13 @@ export class AnalyticsService {
         ? 100
         : 0;
     const avgDailySpend = Math.round((currentSummary.expense / daysElapsed) * 100) / 100;
-    const projectedMonthSpend = Math.round(avgDailySpend * lastDayOfMonth);
+    const projectedMonthSpend = Math.round(avgDailySpend * totalCycleDays);
     const savingsRate =
       currentSummary.income > 0
         ? Math.round(((currentSummary.income - currentSummary.expense) / currentSummary.income) * 100)
         : 0;
 
-    // 14-day daily cashflow trend anchored to the end of the selected period (or today)
+    // 14-day daily cashflow trend
     const trendEndDate =
       period === "last_month" && end
         ? new Date(end.getFullYear(), end.getMonth(), end.getDate())
@@ -154,7 +370,7 @@ export class AnalyticsService {
     }
     const dailyTrend = trendKeys.map((k) => dailyMap.get(k));
 
-    // Wallet analytics: opening balance + all-time flows + selected period earned/spent/transfers
+    // Wallet balances
     const walletMap = new Map();
     const ensureWalletEntry = (name, type = "account", openingBalance = 0, id = name) => {
       if (!walletMap.has(name)) {
@@ -215,11 +431,10 @@ export class AnalyticsService {
 
     const availableBalance = totalOpeningBalance + allTimeSummary.balance;
 
-    // Category spending & budget analysis for the selected period
+    // Category breakdown
     const budgetLookup = new Map(
       registeredCategories.map((c) => [c.name, { id: c.id, monthlyBudget: c.monthlyBudget, icon: c.icon }])
     );
-
     const categoryTotals = new Map();
     let totalExpense = 0;
 
@@ -249,8 +464,26 @@ export class AnalyticsService {
       })
       .sort((a, b) => b.spent - a.spent);
 
+    // Compute splits & merchant intelligence
+    const splitsSummary = this.computeSplitsSummary(allTransactions);
+    const { topMerchants, microSpendSummary } = this.computeMerchantIntelligence(
+      periodTransactions,
+      currentSummary.expense
+    );
+
     return {
       period,
+      salaryCycle: bounds.isSalaryCycle
+        ? {
+            salaryAmount: bounds.salaryAmount,
+            payday: bounds.payday,
+            lastSalaryDate: bounds.lastSalaryDate,
+            nextSalaryDate: bounds.nextSalaryDate,
+            daysRemaining,
+            daysElapsed,
+            totalCycleDays,
+          }
+        : null,
       summary: {
         ...currentSummary,
         savingsRate,
@@ -273,10 +506,16 @@ export class AnalyticsService {
         avgDailySpend,
         projectedMonthSpend,
         utilizationPercent,
+        isSalaryCycle: bounds.isSalaryCycle,
       },
       dailyTrend,
       wallets,
       categoryBreakdown,
+      splitsSummary,
+      merchantIntelligence: {
+        topMerchants,
+        microSpendSummary,
+      },
     };
   }
 }

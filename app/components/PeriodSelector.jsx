@@ -4,6 +4,7 @@ import Dropdown from "@/app/components/Dropdown";
 
 export const PERIOD_OPTIONS = [
   { key: "this_month", name: "This Month" },
+  { key: "salary_cycle", name: "Salary Cycle" },
   { key: "last_month", name: "Last Month" },
   { key: "last_3_months", name: "Last 3 Months" },
   { key: "all_time", name: "All Time" },
