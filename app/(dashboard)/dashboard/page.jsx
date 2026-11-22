@@ -17,6 +17,8 @@ import RenderIcon from "@/app/components/RenderIcon";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import CashflowBarChart from "@/app/components/charts/CashflowBarChart";
 import SpendingTrendLineChart from "@/app/components/charts/SpendingTrendLineChart";
+import DailySpendBenchmarkChart from "@/app/components/charts/DailySpendBenchmarkChart";
+import CategoryDrilldownChart from "@/app/components/charts/CategoryDrilldownChart";
 import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
 import StreamsWidget from "../components/StreamsWidget";
 import TransactionsWidget from "../components/TransactionsWidget";
@@ -371,7 +373,18 @@ export default function Page() {
                         : "text-ink-subtle hover:text-ink-body"
                     }`}
                   >
-                    Daily
+                    Cashflow
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrendChartType("limit")}
+                    className={`px-2 py-0.5 rounded-full text-[10px] cursor-pointer transition-colors ${
+                      trendChartType === "limit"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-subtle hover:text-ink-body"
+                    }`}
+                  >
+                    Daily Limit
                   </button>
                   <button
                     type="button"
@@ -411,6 +424,14 @@ export default function Page() {
                 height={140}
                 onHoverDay={setHoveredDay}
               />
+            ) : trendChartType === "limit" ? (
+              <DailySpendBenchmarkChart
+                dailyTrend={dailyTrend}
+                dailyAllowance={analyticsData?.spendingPace?.dailyAllowance || 0}
+                avgDailySpend={analyticsData?.spendingPace?.avgDailySpend || 0}
+                currency={currency}
+                height={140}
+              />
             ) : (
               <SpendingTrendLineChart
                 dailyTrend={dailyTrend}
@@ -446,11 +467,11 @@ export default function Page() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <CategoryDoughnutChart
+              <CategoryDrilldownChart
                 categories={categoryBreakdown}
                 currency={currency}
-                height={145}
-                cutout="74%"
+                height={165}
+                cutout="72%"
               />
 
               <div className="flex flex-col gap-2.5">

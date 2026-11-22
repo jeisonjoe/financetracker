@@ -10,7 +10,7 @@ import Modal from "@/app/components/Modal";
 import Dropdown from "@/app/components/Dropdown";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import RenderIcon from "@/app/components/RenderIcon";
-import CategoryDoughnutChart from "@/app/components/charts/CategoryDoughnutChart";
+import CategoryDrilldownChart from "@/app/components/charts/CategoryDrilldownChart";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -460,10 +460,10 @@ export default function CategoriesPage() {
           ) : (
             <div className="flex flex-col gap-4">
               <div className="pb-2 border-b border-line-faint">
-                <CategoryDoughnutChart
+                <CategoryDrilldownChart
                   categories={breakdown}
                   currency={currency}
-                  height={160}
+                  height={200}
                   cutout="70%"
                 />
               </div>

@@ -18,6 +18,9 @@ import {
 import { toast } from "sonner";
 import ProgressRing from "@/app/components/ProgressRing";
 import TopMerchantsBarChart from "@/app/components/charts/TopMerchantsBarChart";
+import DayOfWeekSpendChart from "@/app/components/charts/DayOfWeekSpendChart";
+import SpendingCalendarHeatmap from "@/app/components/charts/SpendingCalendarHeatmap";
+import TagSpendChart from "@/app/components/charts/TagSpendChart";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAnalytics } from "@/app/hooks/useFinanceData";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
@@ -405,6 +408,62 @@ export default function InsightsPage() {
           </div>
         </section>
       )}
+
+      {/* Behavioral Spend Patterns: Day of Week & Tag Breakdown */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-fade-up">
+        {/* Day-of-Week Profile */}
+        <div className="lg:col-span-7 bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BiCalendar size={18} className="text-ink-secondary" />
+              <h3 className="text-base font-medium text-ink-primary">
+                Day-of-Week Spending Profile
+              </h3>
+            </div>
+            <span className="text-xs text-ink-subtle">Mon – Sun Activity</span>
+          </div>
+          <DayOfWeekSpendChart
+            dayOfWeekProfile={analyticsData?.dayOfWeekProfile}
+            currency={currency}
+            height={190}
+          />
+        </div>
+
+        {/* Tag & Project Spend Breakdown */}
+        <div className="lg:col-span-5 bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-medium text-ink-primary">
+              Tag &amp; Project Spend
+            </h3>
+            <span className="text-xs text-ink-subtle">
+              {analyticsData?.tagBreakdown?.length || 0} active tags
+            </span>
+          </div>
+          <TagSpendChart
+            tagBreakdown={analyticsData?.tagBreakdown || []}
+            currency={currency}
+            height={190}
+          />
+        </div>
+      </section>
+
+      {/* Spending Calendar Matrix Heatmap */}
+      <section className="bg-surface-elevated/50 border border-line-subtle rounded-2xl p-5 flex flex-col gap-4 animate-fade-up">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BiCalendar size={18} className="text-ink-secondary" />
+            <h3 className="text-base font-medium text-ink-primary">
+              Monthly Spending Intensity Calendar
+            </h3>
+          </div>
+          <span className="text-xs text-ink-subtle">Daily spend distribution</span>
+        </div>
+        <SpendingCalendarHeatmap
+          calendarHeatmap={analyticsData?.calendarHeatmap || []}
+          dailyAllowance={pace?.dailyAllowance || 0}
+          currency={currency}
+        />
+      </section>
 
       {error && (
         <div className="p-4 rounded-2xl bg-red-10 text-red-100 text-sm">

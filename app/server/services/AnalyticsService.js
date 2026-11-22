@@ -653,6 +653,136 @@ export class AnalyticsService {
       currentSummary.expense
     );
 
+    // Compute Day of Week Profile (Mon-Sun)
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const dayMap = dayNames.map((day, idx) => ({
+      day,
+      dayIndex: idx,
+      totalSpent: 0,
+      count: 0,
+      avgSpent: 0,
+    }));
+
+    let weekdayTotal = 0;
+    let weekendTotal = 0;
+    let weekdayCount = 0;
+    let weekendCount = 0;
+
+    for (const tx of periodTransactions) {
+      if (tx.type !== "expense") continue;
+      const d = new Date(tx.createdAt);
+      const dayIdx = d.getDay();
+      const isWeekend = dayIdx === 0 || dayIdx === 6;
+      dayMap[dayIdx].totalSpent += tx.amount;
+      dayMap[dayIdx].count += 1;
+      if (isWeekend) {
+        weekendTotal += tx.amount;
+        weekendCount += 1;
+      } else {
+        weekdayTotal += tx.amount;
+        weekdayCount += 1;
+      }
+    }
+
+    for (const entry of dayMap) {
+      entry.avgSpent = entry.count > 0 ? Math.round(entry.totalSpent / entry.count) : 0;
+    }
+
+    // Ordered Mon -> Sun
+    const orderedDays = [
+      dayMap[1], dayMap[2], dayMap[3], dayMap[4], dayMap[5], dayMap[6], dayMap[0]
+    ];
+    const netExp = currentSummary.expense;
+    const weekendPercent = netExp > 0 ? Math.round((weekendTotal / netExp) * 100) : 0;
+    const weekdayAvg = weekdayCount > 0 ? Math.round(weekdayTotal / weekdayCount) : 0;
+    const weekendAvg = weekendCount > 0 ? Math.round(weekendTotal / weekendCount) : 0;
+
+    const dayOfWeekProfile = {
+      days: orderedDays,
+      weekdayTotal,
+      weekendTotal,
+      weekdayAvg,
+      weekendAvg,
+      weekendPercent,
+    };
+
+    // Compute Calendar Heatmap (daily activity map)
+    const heatEnd = bounds.end || now;
+    const heatStart = bounds.start || new Date(heatEnd.getFullYear(), heatEnd.getMonth(), 1);
+    const heatMap = new Map();
+    const cur = new Date(heatStart);
+    cur.setHours(0, 0, 0, 0);
+    const endLimit = new Date(heatEnd);
+    endLimit.setHours(23, 59, 59, 999);
+
+    let dayCounter = 0;
+    const maxDays = 45;
+    while (cur <= endLimit && dayCounter < maxDays) {
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, "0");
+      const dt = String(cur.getDate()).padStart(2, "0");
+      const dateKey = `${y}-${m}-${dt}`;
+      heatMap.set(dateKey, {
+        date: dateKey,
+        day: cur.getDate(),
+        month: cur.getMonth() + 1,
+        year: cur.getFullYear(),
+        dayOfWeek: cur.getDay(),
+        expense: 0,
+        income: 0,
+        count: 0,
+        topPayees: [],
+      });
+      cur.setDate(cur.getDate() + 1);
+      dayCounter += 1;
+    }
+
+    for (const tx of periodTransactions) {
+      if (tx.type === "transfer") continue;
+      const d = new Date(tx.createdAt);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dt = String(d.getDate()).padStart(2, "0");
+      const dateKey = `${y}-${m}-${dt}`;
+      const cell = heatMap.get(dateKey);
+      if (cell) {
+        if (tx.type === "income") {
+          cell.income += tx.amount;
+        } else {
+          cell.expense += tx.amount;
+          cell.count += 1;
+          const payee = tx.payee || tx.meta?.payee || tx.note || "Expense";
+          if (cell.topPayees.length < 3) {
+            cell.topPayees.push({ payee, amount: tx.amount });
+          }
+        }
+      }
+    }
+
+    const calendarHeatmap = Array.from(heatMap.values());
+
+    // Compute Tag Breakdown
+    const tagMap = new Map();
+    for (const tx of periodTransactions) {
+      if (tx.type !== "expense") continue;
+      const tags = Array.isArray(tx.tags)
+        ? tx.tags
+        : Array.isArray(tx.meta?.tags)
+        ? tx.meta.tags
+        : [];
+      for (const t of tags) {
+        if (!t) continue;
+        const cleanTag = t.startsWith("#") ? t : `#${t}`;
+        if (!tagMap.has(cleanTag)) {
+          tagMap.set(cleanTag, { tag: cleanTag, spent: 0, count: 0 });
+        }
+        const item = tagMap.get(cleanTag);
+        item.spent += tx.amount;
+        item.count += 1;
+      }
+    }
+    const tagBreakdown = Array.from(tagMap.values()).sort((a, b) => b.spent - a.spent);
+
     return {
       period,
       salaryCycle: bounds.isSalaryCycle
@@ -694,6 +824,9 @@ export class AnalyticsService {
         isSalaryCycle: bounds.isSalaryCycle,
       },
       dailyTrend,
+      dayOfWeekProfile,
+      calendarHeatmap,
+      tagBreakdown,
       wallets,
       categoryBreakdown,
       splitsSummary,
