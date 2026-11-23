@@ -1,111 +1,143 @@
 "use client";
 
-import { useMemo } from "react";
-import { Bar } from "react-chartjs-2";
-import "./ChartConfig";
-import { CHART_FONT, COMMON_TOOLTIP_STYLE } from "./ChartConfig";
+import { useEffect, useMemo, useRef } from "react";
+import * as am5 from "@amcharts/amcharts5";
+import * as am5xy from "@amcharts/amcharts5/xy";
 import { cFormat } from "@/app/utils/currencyFormat";
+import { AM_COLORS, createAmChartsRoot, createAmTooltip } from "./AmChartsTheme";
 
 export default function TopMerchantsBarChart({
   merchants = [],
   currency = "INR",
   height = 180,
 }) {
-  const chartData = useMemo(() => {
-    const top = merchants.slice(0, 5);
-    const labels = top.map((m) => m.name);
-    const data = top.map((m) => m.totalSpent || 0);
+  const chartRef = useRef(null);
 
-    return {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: "rgba(225, 100, 73, 0.7)", // theme accent soft
-          hoverBackgroundColor: "#e16449",
-          borderRadius: 4,
-          borderSkipped: false,
-          barPercentage: 0.65,
-        },
-      ],
-    };
+  const { data, hasData } = useMemo(() => {
+    const top = merchants.slice(0, 5);
+    if (top.length === 0) return { data: [], hasData: false };
+
+    const items = top.map((m) => ({
+      name: m.name,
+      spent: m.totalSpent || 0,
+      count: m.count || 0,
+    }));
+
+    return { data: items, hasData: true };
   }, [merchants]);
 
-  const options = useMemo(() => {
-    return {
-      indexAxis: "y",
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false,
-        },
-        tooltip: {
-          ...COMMON_TOOLTIP_STYLE,
-          callbacks: {
-            label: function (context) {
-              const val = context.parsed.x || 0;
-              return ` Total: ${cFormat(val, { currency })}`;
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          display: true,
-          grid: {
-            color: "rgba(255, 255, 255, 0.04)",
-          },
-          border: {
-            display: false,
-          },
-          ticks: {
-            color: "#52525b",
-            font: {
-              ...CHART_FONT,
-              size: 10,
-            },
-            maxTicksLimit: 4,
-            callback: function (val) {
-              if (val >= 1000) return `${Math.round(val / 1000)}k`;
-              return val;
-            },
-          },
-        },
-        y: {
-          grid: {
-            display: false,
-          },
-          border: {
-            display: false,
-          },
-          ticks: {
-            color: "#d4d4d8",
-            font: CHART_FONT,
-            callback: function (val, index) {
-              const name = this.getLabelForValue(index) || "";
-              return name.length > 14 ? `${name.substring(0, 14)}…` : name;
-            },
-          },
-        },
-      },
-    };
-  }, [currency]);
+  useEffect(() => {
+    if (!chartRef.current || !hasData || data.length === 0) return;
 
-  if (!merchants || merchants.length === 0) {
+    const root = createAmChartsRoot(chartRef.current);
+    if (!root) return;
+
+    const chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: false,
+        panY: false,
+        wheelX: "none",
+        wheelY: "none",
+        paddingLeft: 0,
+        paddingRight: 10,
+        paddingTop: 4,
+        paddingBottom: 4,
+      })
+    );
+
+    // Category Y Axis (Horizontal)
+    const yRenderer = am5xy.AxisRendererY.new(root, {
+      inversed: true,
+      minGridDistance: 24,
+    });
+    yRenderer.grid.template.set("visible", false);
+    yRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSecondary,
+      fontSize: 11,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const yAxis = chart.yAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "name",
+        renderer: yRenderer,
+      })
+    );
+    yAxis.data.setAll(data);
+
+    // Value X Axis
+    const xRenderer = am5xy.AxisRendererX.new(root, {});
+    xRenderer.grid.template.setAll({
+      stroke: AM_COLORS.grid,
+      strokeOpacity: 0.04,
+    });
+    xRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const xAxis = chart.xAxes.push(
+      am5xy.ValueAxis.new(root, {
+        renderer: xRenderer,
+        numberFormat: "#a",
+      })
+    );
+
+    // Column Series
+    const series = chart.series.push(
+      am5xy.ColumnSeries.new(root, {
+        name: "Spent",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueXField: "spent",
+        categoryYField: "name",
+        fill: AM_COLORS.accent,
+        tooltip: createAmTooltip(root, currency),
+      })
+    );
+
+    series.columns.template.setAll({
+      cornerRadiusTR: 4,
+      cornerRadiusBR: 4,
+      height: am5.percent(60),
+      strokeOpacity: 0,
+      fillOpacity: 0.85,
+    });
+
+    series.columns.template.states.create("hover", {
+      fillOpacity: 1,
+    });
+
+    series.get("tooltip").label.set(
+      "text",
+      "{categoryY}: [medium]{valueX.formatNumber('#,###')}[/] " + currency
+    );
+
+    series.data.setAll(data);
+    series.appear(500);
+
+    chart.appear(600, 100);
+
+    return () => {
+      root.dispose();
+    };
+  }, [data, hasData, currency]);
+
+  if (!hasData) {
     return (
       <div
         style={{ height: `${height}px` }}
         className="w-full flex items-center justify-center text-xs text-ink-subtle"
       >
-        <span>No merchant data</span>
+        <span>No merchant data available</span>
       </div>
     );
   }
 
   return (
     <div style={{ height: `${height}px` }} className="w-full relative">
-      <Bar data={chartData} options={options} />
+      <div ref={chartRef} className="w-full h-full" />
     </div>
   );
 }

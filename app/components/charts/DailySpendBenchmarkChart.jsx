@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
-import { Chart } from "react-chartjs-2";
-import "./ChartConfig";
-import { COMMON_TOOLTIP_STYLE } from "./ChartConfig";
+import { useEffect, useRef } from "react";
+import * as am5 from "@amcharts/amcharts5";
+import * as am5xy from "@amcharts/amcharts5/xy";
 import { cFormat } from "@/app/utils/currencyFormat";
+import { AM_COLORS, createAmChartsRoot, createAmTooltip } from "./AmChartsTheme";
 
 export default function DailySpendBenchmarkChart({
   dailyTrend = [],
@@ -13,108 +13,161 @@ export default function DailySpendBenchmarkChart({
   currency = "INR",
   height = 200,
 }) {
-  const chartData = useMemo(() => {
-    const labels = dailyTrend.map((d) => d.label || d.date);
-    const expenseData = dailyTrend.map((d) => d.expense || 0);
+  const chartRef = useRef(null);
 
-    // Limit line dataset across all points
-    const limitData = Array(dailyTrend.length).fill(dailyAllowance || 0);
+  useEffect(() => {
+    if (!chartRef.current || !dailyTrend || dailyTrend.length === 0) return;
 
-    const backgroundColors = expenseData.map((val) =>
-      dailyAllowance > 0 && val > dailyAllowance
-        ? "rgba(225, 100, 73, 0.85)" // Over daily budget limit
-        : "rgba(14, 165, 233, 0.7)" // Within budget limit
+    const root = createAmChartsRoot(chartRef.current);
+    if (!root) return;
+
+    const chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: false,
+        panY: false,
+        wheelX: "none",
+        wheelY: "none",
+        paddingLeft: 0,
+        paddingRight: 10,
+        paddingTop: 8,
+        paddingBottom: 0,
+      })
     );
 
-    return {
-      labels,
-      datasets: [
-        {
-          type: "bar",
-          label: "Daily Spend",
-          data: expenseData,
-          backgroundColor: backgroundColors,
-          borderRadius: 4,
-          maxBarThickness: 28,
+    const data = dailyTrend.map((d) => {
+      const expense = d.expense || 0;
+      const isOver = dailyAllowance > 0 && expense > dailyAllowance;
+      return {
+        label: d.label || d.date,
+        expense,
+        columnSettings: {
+          fill: isOver ? AM_COLORS.accent : AM_COLORS.sky,
         },
-        ...(dailyAllowance > 0
-          ? [
-              {
-                type: "line",
-                label: "Safe Daily Limit",
-                data: limitData,
-                borderColor: "rgba(16, 185, 129, 0.9)",
-                borderWidth: 2,
-                borderDash: [5, 4],
-                pointRadius: 0,
-                pointHoverRadius: 0,
-                fill: false,
-              },
-            ]
-          : []),
-      ],
-    };
-  }, [dailyTrend, dailyAllowance]);
+      };
+    });
 
-  const options = useMemo(() => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            color: "#71717a",
-            font: { family: "var(--font-inter, sans-serif)", size: 10 },
-            maxRotation: 0,
-            autoSkip: true,
-            maxTicksLimit: 10,
-          },
-        },
-        y: {
-          grid: { color: "rgba(0, 0, 0, 0.05)" },
-          ticks: {
-            color: "#71717a",
-            font: { family: "var(--font-inter, sans-serif)", size: 10 },
-            callback: (val) => cFormat(val, { currency }),
-          },
-        },
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          align: "end",
-          labels: {
-            boxWidth: 10,
-            boxHeight: 10,
-            color: "#52525b",
-            font: { family: "var(--font-inter, sans-serif)", size: 11 },
-          },
-        },
-        tooltip: {
-          ...COMMON_TOOLTIP_STYLE,
-          callbacks: {
-            label: function (context) {
-              const val = context.parsed.y || 0;
-              const dsLabel = context.dataset.label;
-              if (dsLabel === "Safe Daily Limit") {
-                return ` Safe Limit: ${cFormat(val, { currency })}`;
-              }
-              const diff = dailyAllowance > 0 ? val - dailyAllowance : 0;
-              const status =
-                dailyAllowance > 0
-                  ? diff > 0
-                    ? ` (+${cFormat(diff, { currency })} over limit)`
-                    : ` (${cFormat(Math.abs(diff), { currency })} under limit)`
-                  : "";
-              return ` Spent: ${cFormat(val, { currency })}${status}`;
-            },
-          },
-        },
-      },
+    // Category X Axis
+    const xRenderer = am5xy.AxisRendererX.new(root, {
+      minGridDistance: 32,
+      cellStartLocation: 0.1,
+      cellEndLocation: 0.9,
+    });
+    xRenderer.grid.template.set("visible", false);
+    xRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const xAxis = chart.xAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "label",
+        renderer: xRenderer,
+      })
+    );
+    xAxis.data.setAll(data);
+
+    // Value Y Axis
+    const yRenderer = am5xy.AxisRendererY.new(root, {
+      opposite: true,
+    });
+    yRenderer.grid.template.setAll({
+      stroke: AM_COLORS.grid,
+      strokeOpacity: 0.04,
+    });
+    yRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const yAxis = chart.yAxes.push(
+      am5xy.ValueAxis.new(root, {
+        renderer: yRenderer,
+        numberFormat: "#a",
+      })
+    );
+
+    // Safe Daily Limit Benchmark Guide Line
+    if (dailyAllowance > 0) {
+      const rangeDataItem = yAxis.makeDataItem({
+        value: dailyAllowance,
+      });
+      const range = yAxis.createAxisRange(rangeDataItem);
+
+      range.get("grid").setAll({
+        stroke: AM_COLORS.green,
+        strokeWidth: 1.5,
+        strokeDasharray: [4, 4],
+        strokeOpacity: 0.8,
+        visible: true,
+      });
+
+      range.get("label").setAll({
+        text: `Safe Limit (${cFormat(dailyAllowance, { currency })})`,
+        fill: AM_COLORS.green,
+        fontSize: 10,
+        fontFamily: "var(--font-inter, system-ui, sans-serif)",
+        inside: true,
+        location: 0.95,
+        visible: true,
+      });
+    }
+
+    // Daily Spend Column Series
+    const series = chart.series.push(
+      am5xy.ColumnSeries.new(root, {
+        name: "Daily Spend",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: "expense",
+        categoryXField: "label",
+        tooltip: createAmTooltip(root, currency),
+      })
+    );
+
+    series.columns.template.setAll({
+      cornerRadiusTL: 4,
+      cornerRadiusTR: 4,
+      width: am5.percent(65),
+      templateField: "columnSettings",
+      fillOpacity: 0.85,
+      strokeOpacity: 0,
+    });
+
+    series.columns.template.states.create("hover", {
+      fillOpacity: 1,
+    });
+
+    series.get("tooltip").label.set(
+      "text",
+      "{categoryX}: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+    );
+
+    series.data.setAll(data);
+    series.appear(500);
+
+    // Cursor
+    const cursor = chart.set(
+      "cursor",
+      am5xy.XYCursor.new(root, {
+        behavior: "none",
+        xAxis: xAxis,
+      })
+    );
+    cursor.lineY.set("visible", false);
+    cursor.lineX.setAll({
+      stroke: AM_COLORS.inkSubtle,
+      strokeDasharray: [3, 3],
+      strokeOpacity: 0.3,
+    });
+
+    chart.appear(600, 100);
+
+    return () => {
+      root.dispose();
     };
-  }, [currency, dailyAllowance]);
+  }, [dailyTrend, dailyAllowance, currency]);
 
   if (!dailyTrend || dailyTrend.length === 0) {
     return (
@@ -122,34 +175,40 @@ export default function DailySpendBenchmarkChart({
         style={{ height: `${height}px` }}
         className="w-full flex items-center justify-center text-xs text-ink-subtle"
       >
-        <span>No daily spending data to plot</span>
+        <span>No daily spend trend available</span>
       </div>
     );
   }
 
   return (
     <div className="w-full flex flex-col gap-2">
-      {/* Metrics Row */}
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+      {/* Legend & Stats Indicator */}
+      <div className="flex items-center justify-between text-xs text-ink-subtle px-1">
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-sky-400 shrink-0" />
+            <span>Within Limit</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-red-400 shrink-0" />
+            <span>Over Limit</span>
+          </div>
           {dailyAllowance > 0 && (
-            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2.5 py-1 rounded-lg">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              <span>Safe Limit:</span>
-              <span className="font-medium tabular-nums">{cFormat(dailyAllowance, { currency })}/day</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-0.5 border-t border-dashed border-emerald-400 shrink-0" />
+              <span className="text-emerald-400">Safe Runway</span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 bg-surface-elevated/70 border border-line-subtle px-2.5 py-1 rounded-lg text-ink-secondary">
-            <span>Avg Spend:</span>
-            <span className="font-medium text-ink-primary tabular-nums">
-              {cFormat(avgDailySpend, { currency })}/day
-            </span>
-          </div>
         </div>
+        {avgDailySpend > 0 && (
+          <span className="tabular-nums">
+            Avg: <strong className="font-medium text-ink-primary">{cFormat(avgDailySpend, { currency })}/day</strong>
+          </span>
+        )}
       </div>
 
-      <div style={{ height: `${height}px` }} className="w-full">
-        <Chart type="bar" data={chartData} options={options} />
+      <div style={{ height: `${height}px` }} className="w-full relative">
+        <div ref={chartRef} className="w-full h-full" />
       </div>
     </div>
   );

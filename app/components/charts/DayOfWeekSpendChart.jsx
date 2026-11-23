@@ -1,119 +1,178 @@
 "use client";
 
-import { useMemo } from "react";
-import { Bar } from "react-chartjs-2";
-import "./ChartConfig";
-import { COMMON_TOOLTIP_STYLE } from "./ChartConfig";
+import { useEffect, useMemo, useRef } from "react";
+import * as am5 from "@amcharts/amcharts5";
+import * as am5xy from "@amcharts/amcharts5/xy";
 import { cFormat } from "@/app/utils/currencyFormat";
+import { AM_COLORS, createAmChartsRoot, createAmTooltip } from "./AmChartsTheme";
 
 export default function DayOfWeekSpendChart({
   dayOfWeekProfile = null,
   currency = "INR",
   height = 200,
 }) {
+  const chartRef = useRef(null);
   const days = dayOfWeekProfile?.days || [];
 
-  const chartData = useMemo(() => {
-    const labels = days.map((d) => d.day);
-    const data = days.map((d) => d.totalSpent || 0);
+  const { data, hasData } = useMemo(() => {
+    if (!days || days.length === 0) return { data: [], hasData: false };
 
-    // Differentiate weekends (Sat, Sun) with amber/coral, weekdays with soft indigo/sky
-    const colors = days.map((d) =>
-      d.day === "Sat" || d.day === "Sun"
-        ? "rgba(251, 146, 60, 0.85)" // Weekend
-        : "rgba(99, 102, 241, 0.75)" // Weekday
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Total Spent",
-          data,
-          backgroundColor: colors,
-          borderRadius: 4,
-          maxBarThickness: 32,
+    const items = days.map((d) => {
+      const isWeekend = d.day === "Sat" || d.day === "Sun";
+      return {
+        day: d.day,
+        spent: d.totalSpent || 0,
+        columnSettings: {
+          fill: isWeekend ? am5.color("#fb923c") : am5.color("#818cf8"),
         },
-      ],
-    };
+      };
+    });
+
+    return { data: items, hasData: true };
   }, [days]);
 
-  const options = useMemo(() => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            color: "#71717a",
-            font: { family: "var(--font-inter, sans-serif)", size: 11 },
-          },
-        },
-        y: {
-          grid: { color: "rgba(0, 0, 0, 0.05)" },
-          ticks: {
-            color: "#71717a",
-            font: { family: "var(--font-inter, sans-serif)", size: 10 },
-            callback: (val) => cFormat(val, { currency }),
-          },
-        },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          ...COMMON_TOOLTIP_STYLE,
-          callbacks: {
-            label: function (context) {
-              const val = context.parsed.y || 0;
-              const index = context.dataIndex;
-              const entry = days[index];
-              const countStr = entry?.count ? ` (${entry.count} txns, avg ${cFormat(entry.avgSpent, { currency })})` : "";
-              return ` Total: ${cFormat(val, { currency })}${countStr}`;
-            },
-          },
-        },
-      },
-    };
-  }, [days, currency]);
+  useEffect(() => {
+    if (!chartRef.current || !hasData || data.length === 0) return;
 
-  if (!dayOfWeekProfile || days.length === 0) {
+    const root = createAmChartsRoot(chartRef.current);
+    if (!root) return;
+
+    const chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: false,
+        panY: false,
+        wheelX: "none",
+        wheelY: "none",
+        paddingLeft: 0,
+        paddingRight: 10,
+        paddingTop: 8,
+        paddingBottom: 0,
+      })
+    );
+
+    // Category X Axis
+    const xRenderer = am5xy.AxisRendererX.new(root, {
+      minGridDistance: 24,
+      cellStartLocation: 0.1,
+      cellEndLocation: 0.9,
+    });
+    xRenderer.grid.template.set("visible", false);
+    xRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const xAxis = chart.xAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "day",
+        renderer: xRenderer,
+      })
+    );
+    xAxis.data.setAll(data);
+
+    // Value Y Axis
+    const yRenderer = am5xy.AxisRendererY.new(root, {
+      opposite: true,
+    });
+    yRenderer.grid.template.setAll({
+      stroke: AM_COLORS.grid,
+      strokeOpacity: 0.04,
+    });
+    yRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const yAxis = chart.yAxes.push(
+      am5xy.ValueAxis.new(root, {
+        renderer: yRenderer,
+        numberFormat: "#a",
+      })
+    );
+
+    // Column Series
+    const series = chart.series.push(
+      am5xy.ColumnSeries.new(root, {
+        name: "Day Spend",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: "spent",
+        categoryXField: "day",
+        tooltip: createAmTooltip(root, currency),
+      })
+    );
+
+    series.columns.template.setAll({
+      cornerRadiusTL: 4,
+      cornerRadiusTR: 4,
+      width: am5.percent(60),
+      templateField: "columnSettings",
+      strokeOpacity: 0,
+      fillOpacity: 0.85,
+    });
+
+    series.columns.template.states.create("hover", {
+      fillOpacity: 1,
+    });
+
+    series.get("tooltip").label.set(
+      "text",
+      "{categoryX}: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+    );
+
+    series.data.setAll(data);
+    series.appear(500);
+
+    // Cursor
+    const cursor = chart.set(
+      "cursor",
+      am5xy.XYCursor.new(root, {
+        behavior: "none",
+        xAxis: xAxis,
+      })
+    );
+    cursor.lineY.set("visible", false);
+    cursor.lineX.setAll({
+      stroke: AM_COLORS.inkSubtle,
+      strokeDasharray: [3, 3],
+      strokeOpacity: 0.3,
+    });
+
+    chart.appear(600, 100);
+
+    return () => {
+      root.dispose();
+    };
+  }, [data, hasData, currency]);
+
+  if (!hasData) {
     return (
       <div
         style={{ height: `${height}px` }}
         className="w-full flex items-center justify-center text-xs text-ink-subtle"
       >
-        <span>No weekday spending data available</span>
+        <span>No day-of-week data available</span>
       </div>
     );
   }
 
-  const { weekdayAvg = 0, weekendAvg = 0, weekendPercent = 0 } = dayOfWeekProfile;
-
   return (
-    <div className="w-full flex flex-col gap-3">
-      {/* Weekday vs Weekend Profile Stats */}
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-200/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-            <span>Weekday Avg:</span>
-            <span className="font-medium tabular-nums">{cFormat(weekdayAvg, { currency })}</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            <span>Weekend Avg:</span>
-            <span className="font-medium tabular-nums">{cFormat(weekendAvg, { currency })}</span>
-          </span>
+    <div className="w-full flex flex-col gap-2">
+      <div className="flex items-center gap-3 text-xs text-ink-subtle px-1">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-indigo-400 shrink-0" />
+          <span>Weekdays (Mon - Fri)</span>
         </div>
-        <div className="text-ink-subtle">
-          <span>Weekend Share: </span>
-          <span className="font-medium text-ink-primary tabular-nums">{weekendPercent}%</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-orange-400 shrink-0" />
+          <span>Weekend (Sat - Sun)</span>
         </div>
       </div>
 
-      <div style={{ height: `${height}px` }} className="w-full">
-        <Bar data={chartData} options={options} />
+      <div style={{ height: `${height}px` }} className="w-full relative">
+        <div ref={chartRef} className="w-full h-full" />
       </div>
     </div>
   );

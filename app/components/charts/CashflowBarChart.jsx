@@ -1,123 +1,192 @@
 "use client";
 
-import { useMemo } from "react";
-import { Bar } from "react-chartjs-2";
-import "./ChartConfig";
-import { CHART_FONT, COMMON_TOOLTIP_STYLE } from "./ChartConfig";
+import { useEffect, useRef } from "react";
+import * as am5 from "@amcharts/amcharts5";
+import * as am5xy from "@amcharts/amcharts5/xy";
 import { cFormat } from "@/app/utils/currencyFormat";
+import { AM_COLORS, createAmChartsRoot, createAmTooltip } from "./AmChartsTheme";
 
 export default function CashflowBarChart({
   dailyTrend = [],
   currency = "INR",
   height = 140,
-  onHoverDay = null,
 }) {
-  const chartData = useMemo(() => {
-    const labels = dailyTrend.map((d) => d.label || d.date);
-    const incomeData = dailyTrend.map((d) => d.income || 0);
-    const expenseData = dailyTrend.map((d) => d.expense || 0);
+  const chartRef = useRef(null);
 
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Income",
-          data: incomeData,
-          backgroundColor: "rgba(74, 222, 128, 0.85)", // green
-          hoverBackgroundColor: "#4ade80",
-          borderRadius: 4,
-          borderSkipped: false,
-          barPercentage: 0.7,
-          categoryPercentage: 0.6,
-        },
-        {
-          label: "Expense",
-          data: expenseData,
-          backgroundColor: "rgba(225, 100, 73, 0.85)", // accent red/orange
-          hoverBackgroundColor: "#e16449",
-          borderRadius: 4,
-          borderSkipped: false,
-          barPercentage: 0.7,
-          categoryPercentage: 0.6,
-        },
-      ],
-    };
-  }, [dailyTrend]);
+  useEffect(() => {
+    if (!chartRef.current || !dailyTrend || dailyTrend.length === 0) return;
 
-  const options = useMemo(() => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false, // We render a clean custom legend in the widget header
-        },
-        tooltip: {
-          ...COMMON_TOOLTIP_STYLE,
-          callbacks: {
-            label: function (context) {
-              const datasetLabel = context.dataset.label || "";
-              const val = context.parsed.y || 0;
-              return ` ${datasetLabel}: ${cFormat(val, { currency })}`;
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          grid: {
-            display: false,
-          },
-          border: {
-            display: false,
-          },
-          ticks: {
-            color: "#71717a", // ink-subtle
-            font: CHART_FONT,
-            maxRotation: 0,
-            autoSkip: true,
-            maxTicksLimit: 7,
-          },
-        },
-        y: {
-          display: true,
-          position: "right",
-          grid: {
-            color: "rgba(0, 0, 0, 0.05)",
-          },
-          border: {
-            display: false,
-          },
-          ticks: {
-            color: "#52525b", // ink-faint
-            font: {
-              ...CHART_FONT,
-              size: 10,
-            },
-            maxTicksLimit: 4,
-            callback: function (val) {
-              if (val >= 100000) return `${Math.round(val / 1000)}k`;
-              if (val >= 1000) return `${Math.round(val / 1000)}k`;
-              return val;
-            },
-          },
-        },
-      },
-      onHover: (event, chartElement) => {
-        if (!onHoverDay) return;
-        if (chartElement.length > 0) {
-          const index = chartElement[0].index;
-          onHoverDay(dailyTrend[index]);
-        } else {
-          onHoverDay(null);
-        }
-      },
+    const root = createAmChartsRoot(chartRef.current);
+    if (!root) return;
+
+    const chart = root.container.children.push(
+      am5xy.XYChart.new(root, {
+        panX: false,
+        panY: false,
+        wheelX: "none",
+        wheelY: "none",
+        paddingLeft: 0,
+        paddingRight: 10,
+        paddingTop: 8,
+        paddingBottom: 0,
+        layout: root.verticalLayout,
+      })
+    );
+
+    const data = dailyTrend.map((d) => ({
+      label: d.label || d.date,
+      income: d.income || 0,
+      expense: d.expense || 0,
+    }));
+
+    // Category X Axis
+    const xRenderer = am5xy.AxisRendererX.new(root, {
+      minGridDistance: 32,
+      cellStartLocation: 0.15,
+      cellEndLocation: 0.85,
+    });
+    xRenderer.grid.template.set("visible", false);
+    xRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const xAxis = chart.xAxes.push(
+      am5xy.CategoryAxis.new(root, {
+        categoryField: "label",
+        renderer: xRenderer,
+      })
+    );
+    xAxis.data.setAll(data);
+
+    // Value Y Axis
+    const yRenderer = am5xy.AxisRendererY.new(root, {
+      opposite: true,
+    });
+    yRenderer.grid.template.setAll({
+      stroke: AM_COLORS.grid,
+      strokeOpacity: 0.04,
+    });
+    yRenderer.labels.template.setAll({
+      fill: AM_COLORS.inkSubtle,
+      fontSize: 10,
+      fontFamily: "var(--font-inter, system-ui, sans-serif)",
+    });
+
+    const yAxis = chart.yAxes.push(
+      am5xy.ValueAxis.new(root, {
+        renderer: yRenderer,
+        numberFormat: "#a",
+      })
+    );
+
+    // Income Column Series (Green)
+    const incomeSeries = chart.series.push(
+      am5xy.ColumnSeries.new(root, {
+        name: "Income",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: "income",
+        categoryXField: "label",
+        fill: AM_COLORS.green,
+        stroke: AM_COLORS.green,
+        clustered: true,
+        tooltip: createAmTooltip(root, currency),
+      })
+    );
+
+    incomeSeries.columns.template.setAll({
+      cornerRadiusTL: 4,
+      cornerRadiusTR: 4,
+      width: am5.percent(70),
+      fillOpacity: 0.85,
+      strokeOpacity: 0,
+    });
+
+    incomeSeries.columns.template.states.create("hover", {
+      fillOpacity: 1,
+    });
+
+    incomeSeries.get("tooltip").label.set(
+      "text",
+      "{categoryX} Income: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+    );
+
+    // Expense Column Series (Coral/Accent)
+    const expenseSeries = chart.series.push(
+      am5xy.ColumnSeries.new(root, {
+        name: "Expense",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: "expense",
+        categoryXField: "label",
+        fill: AM_COLORS.accent,
+        stroke: AM_COLORS.accent,
+        clustered: true,
+        tooltip: createAmTooltip(root, currency),
+      })
+    );
+
+    expenseSeries.columns.template.setAll({
+      cornerRadiusTL: 4,
+      cornerRadiusTR: 4,
+      width: am5.percent(70),
+      fillOpacity: 0.85,
+      strokeOpacity: 0,
+    });
+
+    expenseSeries.columns.template.states.create("hover", {
+      fillOpacity: 1,
+    });
+
+    expenseSeries.get("tooltip").label.set(
+      "text",
+      "{categoryX} Expense: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+    );
+
+    incomeSeries.data.setAll(data);
+    expenseSeries.data.setAll(data);
+
+    incomeSeries.appear(500);
+    expenseSeries.appear(500);
+
+    // Cursor
+    const cursor = chart.set(
+      "cursor",
+      am5xy.XYCursor.new(root, {
+        behavior: "none",
+        xAxis: xAxis,
+      })
+    );
+    cursor.lineY.set("visible", false);
+    cursor.lineX.setAll({
+      stroke: AM_COLORS.inkSubtle,
+      strokeDasharray: [3, 3],
+      strokeOpacity: 0.3,
+    });
+
+    chart.appear(600, 100);
+
+    return () => {
+      root.dispose();
     };
-  }, [dailyTrend, currency, onHoverDay]);
+  }, [dailyTrend, currency]);
+
+  if (!dailyTrend || dailyTrend.length === 0) {
+    return (
+      <div
+        style={{ height: `${height}px` }}
+        className="w-full flex items-center justify-center text-xs text-ink-subtle"
+      >
+        <span>No cashflow data available</span>
+      </div>
+    );
+  }
 
   return (
     <div style={{ height: `${height}px` }} className="w-full relative">
-      <Bar data={chartData} options={options} />
+      <div ref={chartRef} className="w-full h-full" />
     </div>
   );
 }

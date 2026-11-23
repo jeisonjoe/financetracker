@@ -1,19 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Doughnut } from "react-chartjs-2";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import * as am5 from "@amcharts/amcharts5";
+import * as am5percent from "@amcharts/amcharts5/percent";
 import { BiChevronLeft, BiLayer } from "react-icons/bi";
-import "./ChartConfig";
-import { CHART_PALETTE, COMMON_TOOLTIP_STYLE } from "./ChartConfig";
 import { cFormat } from "@/app/utils/currencyFormat";
+import { AM_COLORS, AM_PALETTE, createAmChartsRoot, createAmTooltip } from "./AmChartsTheme";
 
 export default function CategoryDrilldownChart({
   categories = [],
   currency = "INR",
   height = 240,
-  cutout = "70%",
 }) {
+  const chartRef = useRef(null);
+  const chartId = useId();
   const [selectedParentName, setSelectedParentName] = useState(null);
+  const [hoveredItem, setHoveredItem] = useState(null);
 
   // Active category context
   const selectedParent = useMemo(() => {
@@ -21,7 +23,7 @@ export default function CategoryDrilldownChart({
     return categories.find((c) => c.name === selectedParentName) || null;
   }, [categories, selectedParentName]);
 
-  const { chartData, displayItems, totalAmount, title, isDrilldown } = useMemo(() => {
+  const { displayItems, totalAmount, title, isDrilldown } = useMemo(() => {
     if (selectedParent) {
       // Viewing subcategories for selected parent
       const subs = (selectedParent.subcategories || []).filter((s) => (s.spent || 0) > 0);
@@ -31,14 +33,14 @@ export default function CategoryDrilldownChart({
       const items = subs.map((s, idx) => ({
         name: s.name,
         spent: s.spent || 0,
-        color: CHART_PALETTE[idx % CHART_PALETTE.length],
+        color: AM_PALETTE[idx % AM_PALETTE.length],
       }));
 
       if (unassigned > 0 || items.length === 0) {
         items.push({
           name: items.length > 0 ? "General / Direct" : selectedParent.name,
           spent: unassigned > 0 ? unassigned : selectedParent.spent || 0,
-          color: CHART_PALETTE[items.length % CHART_PALETTE.length],
+          color: AM_PALETTE[items.length % AM_PALETTE.length],
         });
       }
 
@@ -49,18 +51,6 @@ export default function CategoryDrilldownChart({
         title: selectedParent.name,
         totalAmount: total,
         displayItems: items,
-        chartData: {
-          labels: items.map((i) => i.name),
-          datasets: [
-            {
-              data: items.map((i) => i.spent),
-              backgroundColor: items.map((i) => i.color),
-              borderColor: "transparent",
-              borderWidth: 0,
-              hoverOffset: 4,
-            },
-          ],
-        },
       };
     }
 
@@ -72,7 +62,7 @@ export default function CategoryDrilldownChart({
     const items = top.map((c, idx) => ({
       name: c.name,
       spent: c.spent || 0,
-      color: c.color || CHART_PALETTE[idx % CHART_PALETTE.length],
+      color: AM_PALETTE[idx % AM_PALETTE.length],
       hasSubcategories: Array.isArray(c.subcategories) && c.subcategories.length > 0,
     }));
 
@@ -81,7 +71,7 @@ export default function CategoryDrilldownChart({
       items.push({
         name: "Other Categories",
         spent: otherSpent,
-        color: "#94a3b8",
+        color: am5.color("#94a3b8"),
         hasSubcategories: false,
       });
     }
@@ -93,59 +83,95 @@ export default function CategoryDrilldownChart({
       title: "All Categories",
       totalAmount: total,
       displayItems: items,
-      chartData: {
-        labels: items.map((i) => i.name),
-        datasets: [
-          {
-            data: items.map((i) => i.spent),
-            backgroundColor: items.map((i) => i.color),
-            borderColor: "transparent",
-            borderWidth: 0,
-            hoverOffset: 4,
-          },
-        ],
-      },
     };
   }, [categories, selectedParent]);
 
-  const options = useMemo(() => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout,
-      onClick: (_event, elements) => {
-        if (!isDrilldown && elements.length > 0) {
-          const index = elements[0].index;
-          const clickedItem = displayItems[index];
-          if (clickedItem && clickedItem.name !== "Other Categories") {
-            const parent = categories.find((c) => c.name === clickedItem.name);
-            if (parent && parent.subcategories && parent.subcategories.length > 0) {
-              setSelectedParentName(clickedItem.name);
-            }
-          }
+  useEffect(() => {
+    if (!chartRef.current || displayItems.length === 0 || totalAmount === 0) return;
+
+    const root = createAmChartsRoot(chartRef.current);
+    if (!root) return;
+
+    const chart = root.container.children.push(
+      am5percent.PieChart.new(root, {
+        layout: root.verticalLayout,
+        innerRadius: am5.percent(70),
+        paddingTop: 4,
+        paddingBottom: 4,
+        paddingLeft: 4,
+        paddingRight: 4,
+      })
+    );
+
+    const series = chart.series.push(
+      am5percent.PieSeries.new(root, {
+        valueField: "spent",
+        categoryField: "name",
+        alignLabels: false,
+        tooltip: createAmTooltip(root, currency),
+      })
+    );
+
+    // Hide outer callout labels for clean modern minimalist look
+    series.labels.template.set("visible", false);
+    series.ticks.template.set("visible", false);
+
+    // Slices styling and interactions
+    series.slices.template.setAll({
+      strokeWidth: 2,
+      stroke: AM_COLORS.surfaceElevated,
+      cornerRadius: 4,
+      templateField: "sliceSettings",
+      interactive: true,
+      cursorOverStyle: "pointer",
+    });
+
+    // Custom colors & slice settings
+    const data = displayItems.map((item) => ({
+      name: item.name,
+      spent: item.spent,
+      sliceSettings: {
+        fill: item.color,
+      },
+    }));
+
+    // Tooltip format
+    series.slices.template.set("tooltipText", "{category}: [medium]{value.formatNumber('#,###')}[/] " + currency + " ({valuePercentTotal.formatNumber('0.0')}%)");
+
+    // Click slice to drilldown
+    series.slices.template.events.on("click", (ev) => {
+      const clickedName = ev.target.dataItem?.dataContext?.name;
+      if (!isDrilldown && clickedName) {
+        const found = categories.find((c) => c.name === clickedName);
+        if (found && Array.isArray(found.subcategories) && found.subcategories.length > 0) {
+          setSelectedParentName(clickedName);
         }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          ...COMMON_TOOLTIP_STYLE,
-          callbacks: {
-            title: () => "",
-            label: function (context) {
-              const label = context.label || "";
-              const val = context.parsed || 0;
-              const pct = totalAmount > 0 ? Math.round((val / totalAmount) * 100) : 0;
-              const subHint =
-                !isDrilldown && categories.find((c) => c.name === label)?.subcategories?.length > 0
-                  ? " (Click to view subcategories)"
-                  : "";
-              return ` ${label}: ${cFormat(val, { currency })} (${pct}%)${subHint}`;
-            },
-          },
-        },
-      },
+      }
+    });
+
+    // Hover slice to update center readout
+    series.slices.template.events.on("pointerover", (ev) => {
+      const context = ev.target.dataItem?.dataContext;
+      if (context) {
+        setHoveredItem({
+          name: context.name,
+          spent: context.spent,
+          pct: totalAmount > 0 ? Math.round((context.spent / totalAmount) * 100) : 0,
+        });
+      }
+    });
+
+    series.slices.template.events.on("pointerout", () => {
+      setHoveredItem(null);
+    });
+
+    series.data.setAll(data);
+    series.appear(600, 100);
+
+    return () => {
+      root.dispose();
     };
-  }, [cutout, isDrilldown, displayItems, totalAmount, currency, categories]);
+  }, [displayItems, totalAmount, currency, isDrilldown, categories]);
 
   if (!categories || categories.length === 0 || totalAmount === 0) {
     return (
@@ -153,79 +179,88 @@ export default function CategoryDrilldownChart({
         style={{ height: `${height}px` }}
         className="w-full flex flex-col items-center justify-center text-xs text-ink-subtle"
       >
-        <span>No category spending data available</span>
+        <span>No category spending data for this period</span>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-3 w-full">
-      {/* Navigation Header */}
-      <div className="flex items-center justify-between text-xs text-ink-secondary">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {isDrilldown ? (
-            <button
-              type="button"
-              onClick={() => setSelectedParentName(null)}
-              className="inline-flex items-center gap-1 text-cta hover:text-cta/80 transition-colors font-medium cursor-pointer"
-            >
-              <BiChevronLeft size={16} />
-              <span>All Categories</span>
-            </button>
-          ) : (
-            <span className="flex items-center gap-1 text-ink-subtle">
-              <BiLayer size={14} />
-              <span>Click a category to drill down</span>
-            </span>
-          )}
-          {isDrilldown && (
-            <>
-              <span className="text-ink-muted">/</span>
-              <span className="text-ink-primary font-medium truncate">{title}</span>
-            </>
-          )}
-        </div>
-        <span className="text-ink-subtle tabular-nums">
-          {displayItems.length} {isDrilldown ? "subcategories" : "categories"}
-        </span>
-      </div>
+  const centerDisplayTitle = hoveredItem?.name || title;
+  const centerDisplayAmount = hoveredItem?.spent ?? totalAmount;
 
-      {/* Doughnut Chart */}
-      <div style={{ height: `${height}px` }} className="w-full relative flex items-center justify-center">
-        <Doughnut data={chartData} options={options} />
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
-          <span className="text-[11px] text-ink-subtle truncate max-w-[130px]">{title}</span>
-          <span className="text-sm sm:text-base font-medium text-ink-primary tabular-nums">
-            {cFormat(totalAmount, { currency })}
+  return (
+    <div className="w-full flex flex-col gap-3">
+      {/* Drilldown Back Navigation */}
+      {isDrilldown && (
+        <div className="flex items-center justify-between pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedParentName(null);
+              setHoveredItem(null);
+            }}
+            className="flex items-center gap-1 text-xs text-ink-secondary hover:text-ink-primary font-medium px-2 py-1 rounded-lg bg-surface-hover transition-colors cursor-pointer"
+          >
+            <BiChevronLeft size={16} />
+            <span>All Categories</span>
+          </button>
+          <span className="text-xs text-ink-subtle font-medium truncate max-w-[180px]">
+            {selectedParentName}
           </span>
         </div>
+      )}
+
+      {/* Donut Chart Container */}
+      <div style={{ height: `${height}px` }} className="w-full relative flex items-center justify-center">
+        <div ref={chartRef} className="w-full h-full" />
+
+        {/* Center Readout */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+          <span className="text-[11px] text-ink-subtle font-normal truncate max-w-[120px]">
+            {centerDisplayTitle}
+          </span>
+          <span className="text-sm font-semibold text-ink-primary tabular-nums">
+            {cFormat(centerDisplayAmount, { currency })}
+          </span>
+          {hoveredItem && (
+            <span className="text-[10px] text-ink-muted">
+              {hoveredItem.pct}%
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Interactive Legend / Breakdown Pills */}
-      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar pt-1">
+      {/* Category Pills Breakdown */}
+      <div className="flex flex-wrap gap-1.5 pt-1 max-h-[96px] overflow-y-auto">
         {displayItems.map((item) => {
           const pct = totalAmount > 0 ? Math.round((item.spent / totalAmount) * 100) : 0;
-          const canDrill = !isDrilldown && item.hasSubcategories;
+          const isClickable = !isDrilldown && item.hasSubcategories;
 
           return (
             <button
               key={item.name}
               type="button"
-              disabled={!canDrill}
-              onClick={() => canDrill && setSelectedParentName(item.name)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border transition-all ${
-                canDrill
-                  ? "bg-surface-elevated/70 border-line-subtle hover:border-cta/40 hover:bg-tint cursor-pointer"
-                  : "bg-surface-elevated/30 border-line-subtle/60 cursor-default"
+              disabled={!isClickable}
+              onClick={() => {
+                if (isClickable) {
+                  setSelectedParentName(item.name);
+                  setHoveredItem(null);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-colors ${
+                isClickable
+                  ? "bg-surface-elevated hover:bg-surface-hover border border-line-subtle text-ink-secondary cursor-pointer"
+                  : "bg-surface-elevated/40 text-ink-muted cursor-default border border-line-subtle/50"
               }`}
             >
               <span
                 className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: item.color }}
+                style={{ backgroundColor: typeof item.color === "object" ? item.color.toCSSHex() : item.color }}
               />
-              <span className="text-ink-primary truncate max-w-[110px]">{item.name}</span>
-              <span className="text-ink-subtle tabular-nums font-normal">{pct}%</span>
-              {canDrill && <span className="text-cta text-[10px]">↳</span>}
+              <span className="truncate max-w-[110px]">{item.name}</span>
+              <span className="text-ink-subtle font-normal">{pct}%</span>
+              {isClickable && (
+                <BiLayer size={12} className="text-ink-subtle shrink-0 ml-0.5" />
+              )}
             </button>
           );
         })}
