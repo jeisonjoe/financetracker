@@ -24,6 +24,8 @@ import Dropdown from "@/app/components/Dropdown";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import RenderIcon from "@/app/components/RenderIcon";
 import CategoryDrilldownChart from "@/app/components/charts/CategoryDrilldownChart";
+import CategoryTrendLineChart from "@/app/components/charts/CategoryTrendLineChart";
+import SpendingTrendLineChart from "@/app/components/charts/SpendingTrendLineChart";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { getPeriodDateBounds } from "@/app/utils/dateBounds";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -65,6 +67,7 @@ export default function CategoriesPage() {
   const [merging, setMerging] = useState(false);
   const [selectedCategoryName, setSelectedCategoryName] = useState(null);
   const [selectedSubcategoryName, setSelectedSubcategoryName] = useState(null);
+  const [overviewGraphType, setOverviewGraphType] = useState("donut");
 
   const { data: categories = [], isLoading } = useCategoriesQuery();
   const { data: analytics } = useAnalytics(period);
@@ -689,6 +692,17 @@ export default function CategoriesPage() {
                 </div>
               )}
 
+              {/* Category-Specific Spending Trend Line Graph */}
+              {selectedCategoryTransactions.length > 0 && (
+                <CategoryTrendLineChart
+                  transactions={selectedCategoryTransactions}
+                  currency={currency}
+                  categoryName={selectedCategoryName}
+                  budget={activeParentObj?.monthly_budget}
+                  height={130}
+                />
+              )}
+
               {/* Contributing Transactions List */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs">
@@ -778,12 +792,41 @@ export default function CategoriesPage() {
             /* Default: Spending Share & Category Breakdown */
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-base font-normal text-ink-secondary">
-                  Spending Share
-                </h2>
-                <span className="text-xs text-ink-faint">
-                  Click a category to inspect transactions
-                </span>
+                <div className="flex flex-col">
+                  <h2 className="text-base font-normal text-ink-secondary">
+                    {overviewGraphType === "donut" ? "Spending Share" : "Daily Spend Progression"}
+                  </h2>
+                  <span className="text-[11px] text-ink-subtle">
+                    {overviewGraphType === "donut"
+                      ? "Click a category slice to drill down"
+                      : "Cumulative expense curve over selected period"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 bg-surface p-0.5 rounded-full border border-line-subtle text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setOverviewGraphType("donut")}
+                    className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                      overviewGraphType === "donut"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-muted hover:text-ink-secondary"
+                    }`}
+                  >
+                    Share
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverviewGraphType("line")}
+                    className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                      overviewGraphType === "line"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-muted hover:text-ink-secondary"
+                    }`}
+                  >
+                    Trend Line
+                  </button>
+                </div>
               </div>
 
               {breakdown.length === 0 ? (
@@ -798,12 +841,20 @@ export default function CategoriesPage() {
               ) : (
                 <div className="flex flex-col gap-4">
                   <div className="pb-2 border-b border-line-faint">
-                    <CategoryDrilldownChart
-                      categories={breakdown}
-                      currency={currency}
-                      height={200}
-                      cutout="70%"
-                    />
+                    {overviewGraphType === "donut" ? (
+                      <CategoryDrilldownChart
+                        categories={breakdown}
+                        currency={currency}
+                        height={200}
+                        cutout="70%"
+                      />
+                    ) : (
+                      <SpendingTrendLineChart
+                        dailyTrend={analytics?.dailyTrend || []}
+                        currency={currency}
+                        height={180}
+                      />
+                    )}
                   </div>
 
                   {breakdown.map((item) => (

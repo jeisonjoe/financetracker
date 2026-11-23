@@ -9,6 +9,7 @@ import ProgressRing from "@/app/components/ProgressRing";
 import LoadingAnim from "@/app/components/LoadingAnim";
 import RenderIcon from "@/app/components/RenderIcon";
 import BudgetComparisonChart from "@/app/components/charts/BudgetComparisonChart";
+import RunwayLineChart from "@/app/components/charts/RunwayLineChart";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -50,6 +51,7 @@ export default function BudgetsPage() {
   const [search, setSearch] = useState("");
   const [draftBudgets, setDraftBudgets] = useState({});
   const [savingBudgets, setSavingBudgets] = useState(false);
+  const [chartMode, setChartMode] = useState("bars");
 
   const { data: categories = [], isLoading } = useCategoriesQuery();
   const { data: analytics } = useAnalytics(period);
@@ -757,11 +759,53 @@ export default function BudgetsPage() {
           {breakdown.length > 0 && (
             <div className="bg-surface-elevated/50 rounded-2xl border border-line-subtle p-5 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-normal text-ink-secondary">
-                  Budget vs. Spent
-                </h2>
+                <div className="flex flex-col">
+                  <h2 className="text-base font-normal text-ink-secondary">
+                    {chartMode === "bars" ? "Budget vs. Spent" : "Budget Burn Pace"}
+                  </h2>
+                  <span className="text-[11px] text-ink-subtle">
+                    {chartMode === "bars"
+                      ? "Category caps compared against actual spending"
+                      : "Cumulative burn rate trajectory against safe linear runway"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 bg-surface p-0.5 rounded-full border border-line-subtle text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setChartMode("bars")}
+                    className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                      chartMode === "bars"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-muted hover:text-ink-secondary"
+                    }`}
+                  >
+                    Caps
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartMode("line")}
+                    className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                      chartMode === "line"
+                        ? "bg-tint-active text-ink-primary font-medium"
+                        : "text-ink-muted hover:text-ink-secondary"
+                    }`}
+                  >
+                    Burn Pace
+                  </button>
+                </div>
               </div>
-              <BudgetComparisonChart categories={breakdown} currency={currency} height={200} />
+
+              {chartMode === "bars" ? (
+                <BudgetComparisonChart categories={breakdown} currency={currency} height={200} />
+              ) : (
+                <RunwayLineChart
+                  dailyTrend={analytics?.dailyTrend || []}
+                  dailyAllowance={analytics?.spendingPace?.dailyAllowance || 0}
+                  currency={currency}
+                  height={200}
+                />
+              )}
             </div>
           )}
 

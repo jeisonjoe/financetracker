@@ -21,6 +21,7 @@ import TopMerchantsBarChart from "@/app/components/charts/TopMerchantsBarChart";
 import DayOfWeekSpendChart from "@/app/components/charts/DayOfWeekSpendChart";
 import SpendingCalendarHeatmap from "@/app/components/charts/SpendingCalendarHeatmap";
 import TagSpendChart from "@/app/components/charts/TagSpendChart";
+import RunwayLineChart from "@/app/components/charts/RunwayLineChart";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAnalytics } from "@/app/hooks/useFinanceData";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
@@ -213,6 +214,16 @@ export default function InsightsPage() {
                 {cFormat(pace?.spent || 0, { currency })} / {cFormat(salaryCycle.salaryAmount || pace?.spendingCap || 0, { currency })}
               </span>
             </div>
+          </div>
+
+          {/* Runway Line Graph */}
+          <div className="mt-4 pt-3 border-t border-line-faint">
+            <RunwayLineChart
+              dailyTrend={analyticsData?.dailyTrend || []}
+              dailyAllowance={pace?.dailyAllowance || 0}
+              currency={currency}
+              height={160}
+            />
           </div>
         </section>
       )}
