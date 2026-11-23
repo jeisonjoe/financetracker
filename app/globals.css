@@ -17,13 +17,13 @@
   --theme-backdrop: rgba(0, 0, 0, 0.65);
 
   /* Typography / Ink Hierarchy */
-  --theme-ink-primary: #f4f4f5;
-  --theme-ink-secondary: #e4e4e7;
-  --theme-ink-body: #d4d4d8;
-  --theme-ink-muted: #a1a1aa;
-  --theme-ink-subtle: #71717a;
-  --theme-ink-faint: #52525b;
-  --theme-ink-placeholder: #52525b;
+  --theme-ink-primary: #ffffff;
+  --theme-ink-secondary: #f4f4f5;
+  --theme-ink-body: #e4e4e7;
+  --theme-ink-muted: #d4d4d8;
+  --theme-ink-subtle: #a1a1aa;
+  --theme-ink-faint: #71717a;
+  --theme-ink-placeholder: #71717a;
 
   /* Primary Contrast CTA (buttons, active pills) */
   --theme-cta-bg: #f4f4f5;

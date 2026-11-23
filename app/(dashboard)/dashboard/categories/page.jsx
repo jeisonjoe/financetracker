@@ -351,7 +351,7 @@ export default function CategoriesPage() {
                             <span className="text-sm sm:text-base font-medium text-ink-primary truncate group-hover/title:text-ink-secondary">
                               {parent.name}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-tint-subtle text-[11px] text-ink-muted shrink-0">
+                            <span className="px-2 py-0.5 rounded-full bg-tint text-[11px] text-ink-secondary border border-line-subtle shrink-0 font-medium">
                               {TYPE_LABELS[parent.type] || parent.type}
                             </span>
                             {isSelected && (
@@ -361,14 +361,14 @@ export default function CategoriesPage() {
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                             {hasLimit && (
                               <span className="tabular-nums">
                                 Cap {cFormat(parent.monthly_budget, { currency })}
                               </span>
                             )}
                             {spent > 0 && (
-                              <span className="tabular-nums">
+                              <span className="tabular-nums text-ink-body">
                                 · Spent {cFormat(spent, { currency })}
                               </span>
                             )}
@@ -391,7 +391,7 @@ export default function CategoriesPage() {
                                   : "On Track"}
                               </span>
                             )}
-                            <span className="text-ink-faint">
+                            <span className="text-ink-subtle">
                               · {subs.length} {subs.length === 1 ? "subcategory" : "subcategories"}
                             </span>
                           </div>
@@ -411,10 +411,10 @@ export default function CategoriesPage() {
                               setSelectedSubcategoryName(null);
                             }
                           }}
-                          className={`px-2.5 py-1 text-xs rounded-full border transition-colors cursor-pointer inline-flex items-center gap-1 ${
+                          className={`px-3 py-1.5 text-xs rounded-full border transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                             isSelected
-                              ? "bg-ink-primary text-surface border-ink-primary"
-                              : "text-ink-subtle hover:text-ink-primary hover:bg-tint border-line-subtle"
+                              ? "bg-ink-primary text-surface border-ink-primary font-medium"
+                              : "text-ink-secondary hover:text-ink-primary bg-surface hover:bg-surface-hover border-line-subtle hover:border-line font-medium"
                           }`}
                           title={`View transactions for ${parent.name}`}
                         >
@@ -497,25 +497,25 @@ export default function CategoriesPage() {
                                     );
                                   }}
                                 >
-                                  <span className="text-ink-subtle text-xs shrink-0">↳</span>
+                                  <span className="text-ink-muted text-xs shrink-0">↳</span>
                                   <div className="flex flex-col min-w-0">
-                                    <span className="text-xs font-medium text-ink-body truncate">
+                                    <span className="text-xs font-medium text-ink-primary truncate">
                                       {sub.name}
                                     </span>
-                                    <div className="flex items-center gap-1.5 text-[11px] text-ink-subtle">
+                                    <div className="flex items-center gap-1.5 text-xs text-ink-muted">
                                       {subBudget > 0 && (
                                         <span className="tabular-nums">
                                           Cap {cFormat(subBudget, { currency })}
                                         </span>
                                       )}
                                       {subSpent > 0 && (
-                                        <span className="tabular-nums text-ink-muted">
+                                        <span className="tabular-nums text-ink-body">
                                           Spent {cFormat(subSpent, { currency })}
                                         </span>
                                       )}
                                       {subBudget > 0 && (
                                         <span
-                                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-medium ${
+                                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                                             subSpent > subBudget
                                               ? "bg-red-500/10 text-red-700"
                                               : Math.round((subSpent / subBudget) * 100) >
@@ -530,7 +530,7 @@ export default function CategoriesPage() {
                                         </span>
                                       )}
                                       {subBudget === 0 && subSpent === 0 && (
-                                        <span className="text-ink-faint">No limit</span>
+                                        <span className="text-ink-subtle">No limit</span>
                                       )}
                                     </div>
                                   </div>
@@ -603,10 +603,10 @@ export default function CategoriesPage() {
                     />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-ink-primary truncate">
+                    <span className="text-base font-medium text-ink-primary truncate">
                       {selectedCategoryName}
                     </span>
-                    <span className="text-xs text-ink-subtle">
+                    <span className="text-xs text-ink-muted">
                       {selectedSubcategoryName
                         ? `Filtered: ${selectedSubcategoryName}`
                         : "Contributing Transactions"}
@@ -620,27 +620,27 @@ export default function CategoriesPage() {
                     setSelectedCategoryName(null);
                     setSelectedSubcategoryName(null);
                   }}
-                  className="px-2.5 py-1 text-xs text-ink-subtle hover:text-ink-primary hover:bg-tint rounded-full border border-line-subtle transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-full border border-line-subtle transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 font-medium"
                 >
-                  <BiArrowBack size={13} />
+                  <BiArrowBack size={14} />
                   <span>Overview</span>
                 </button>
               </div>
 
               {/* Quick Metrics Bar */}
-              <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface border border-line-faint">
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-ink-subtle">Period Spend</span>
-                  <span className="text-sm font-medium text-ink-primary tabular-nums">
+              <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-xl bg-surface border border-line-faint">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-ink-muted">Period Spend</span>
+                  <span className="text-base font-semibold text-ink-primary tabular-nums">
                     {cFormat(
                       activeBreakdownObj?.spent || spentByName.get(selectedCategoryName) || 0,
                       { currency }
                     )}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-ink-subtle">Monthly Budget</span>
-                  <span className="text-sm font-medium text-ink-primary tabular-nums">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-ink-muted">Monthly Budget</span>
+                  <span className="text-base font-semibold text-ink-primary tabular-nums">
                     {Number(activeParentObj?.monthly_budget) > 0
                       ? cFormat(activeParentObj.monthly_budget, { currency })
                       : "No limit set"}
@@ -654,10 +654,10 @@ export default function CategoriesPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedSubcategoryName(null)}
-                    className={`px-2.5 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+                    className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
                       !selectedSubcategoryName
-                        ? "bg-tint-active text-ink-primary font-medium"
-                        : "text-ink-subtle hover:text-ink-body bg-surface border border-line-subtle"
+                        ? "bg-ink-primary text-surface font-medium shadow-sm"
+                        : "text-ink-secondary hover:text-ink-primary bg-surface hover:bg-surface-hover border border-line-subtle hover:border-line"
                     }`}
                   >
                     All
@@ -671,10 +671,10 @@ export default function CategoriesPage() {
                         onClick={() =>
                           setSelectedSubcategoryName(isSubActive ? null : sub.name)
                         }
-                        className={`px-2.5 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+                        className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
                           isSubActive
-                            ? "bg-tint-active text-ink-primary font-medium"
-                            : "text-ink-subtle hover:text-ink-body bg-surface border border-line-subtle"
+                            ? "bg-ink-primary text-surface font-medium shadow-sm"
+                            : "text-ink-secondary hover:text-ink-primary bg-surface hover:bg-surface-hover border border-line-subtle hover:border-line"
                         }`}
                       >
                         {sub.name}
@@ -686,9 +686,9 @@ export default function CategoriesPage() {
 
               {/* Contributing Transactions List */}
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-ink-subtle">
-                  <span>Transactions ({selectedCategoryTransactions.length})</span>
-                  <span className="text-[11px] text-ink-faint">Click any item to edit</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-ink-secondary">Transactions ({selectedCategoryTransactions.length})</span>
+                  <span className="text-ink-muted">Click any item to edit</span>
                 </div>
 
                 {catTxLoading ? (
@@ -697,8 +697,8 @@ export default function CategoriesPage() {
                   </div>
                 ) : selectedCategoryTransactions.length === 0 ? (
                   <div className="py-8 text-center flex flex-col gap-1 rounded-xl bg-surface border border-line-faint p-4">
-                    <span className="text-xs text-ink-subtle">No transactions found for this selection</span>
-                    <span className="text-[11px] text-ink-faint">
+                    <span className="text-xs text-ink-muted">No transactions found for this selection</span>
+                    <span className="text-xs text-ink-subtle">
                       Transactions in this category will appear here.
                     </span>
                   </div>
@@ -719,20 +719,20 @@ export default function CategoriesPage() {
                         <div
                           key={tx.id}
                           onClick={() => open(AddTransactionSidebar, { transaction: tx })}
-                          className="group flex items-center justify-between gap-3 p-2.5 rounded-xl bg-surface border border-line-faint hover:border-line hover:bg-surface-elevated/40 transition-colors cursor-pointer"
+                          className="group flex items-center justify-between gap-3 p-3 rounded-xl bg-surface border border-line-faint hover:border-line hover:bg-surface-elevated/60 transition-colors cursor-pointer"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="flex flex-col min-w-0">
-                              <span className="text-xs font-medium text-ink-body truncate">
+                              <span className="text-xs sm:text-sm font-medium text-ink-primary truncate">
                                 {tx.payee || tx.description || tx.category?.name || "Transaction"}
                               </span>
-                              <div className="flex items-center gap-1.5 text-[11px] text-ink-subtle">
+                              <div className="flex items-center gap-1.5 text-xs text-ink-muted mt-0.5">
                                 {formattedDate && <span>{formattedDate}</span>}
                                 {subName && (
-                                  <span className="text-ink-muted">· {subName}</span>
+                                  <span className="text-ink-secondary">· {subName}</span>
                                 )}
                                 {tx.wallet?.name && (
-                                  <span className="text-ink-faint">· {tx.wallet.name}</span>
+                                  <span className="text-ink-subtle">· {tx.wallet.name}</span>
                                 )}
                               </div>
                             </div>
@@ -740,16 +740,16 @@ export default function CategoriesPage() {
 
                           <div className="flex items-center gap-2 shrink-0">
                             <span
-                              className={`text-xs font-medium tabular-nums ${
-                                isExpense ? "text-ink-primary" : "text-emerald-600"
+                              className={`text-xs sm:text-sm font-semibold tabular-nums ${
+                                isExpense ? "text-ink-primary" : "text-emerald-500"
                               }`}
                             >
                               {isExpense ? "-" : "+"}
                               {cFormat(tx.amount, { currency })}
                             </span>
                             <BiChevronRight
-                              size={14}
-                              className="text-ink-faint group-hover:text-ink-subtle transition-colors"
+                              size={15}
+                              className="text-ink-subtle group-hover:text-ink-secondary transition-colors"
                             />
                           </div>
                         </div>
