@@ -708,7 +708,7 @@ export default function CategoriesPage() {
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-1.5 max-h-[440px] overflow-y-auto pr-1">
+                  <div className="flex flex-col gap-1.5 max-h-[440px] overflow-y-auto scrollbar-minimal pr-1">
                     {selectedCategoryTransactions.map((tx) => {
                       const subName = tx.subcategory?.name || tx.subcategory || "";
                       const txDate = tx.created_at || tx.date;

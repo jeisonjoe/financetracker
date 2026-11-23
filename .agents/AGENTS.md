@@ -14,6 +14,10 @@
 ## Theme & Color Scheme
 - **Light Mode Only:** The application operates exclusively in Light Mode. Do not include dark mode (`dark:`) utility classes or dark theme variants.
 
+## Scrolling & Scrollbars
+- **Global Custom Scrollbar:** Always enforce the custom sleek scrollbar style across all scrolling elements and containers (`overflow-y-auto`, `overflow-x-auto`, `overflow-auto`, lists, sidebars, modals, dropdowns). Never allow default operating system or browser scrollbars (such as grey Windows scrollbars) to appear.
+- **Scrollbar Specs:** Use thin, transparent-track scrollbars with rounded translucent thumbs (`var(--theme-scrollbar-thumb)`). When hiding scrollbars completely, use `.no-scrollbar`.
+
 ## Design Consistency
 - **Design System Alignment:** Always inspect and strictly match the existing application's design system (color tokens, typography, button styles, borders, and modal structures) before creating or modifying UI elements. Ensure complete visual harmony across all screens.
 
