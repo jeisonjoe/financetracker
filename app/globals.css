@@ -16,18 +16,18 @@
   --theme-nav-hover: #141417;
   --theme-backdrop: rgba(0, 0, 0, 0.65);
 
-  /* Typography / Ink Hierarchy */
-  --theme-ink-primary: #ffffff;
-  --theme-ink-secondary: #f4f4f5;
-  --theme-ink-body: #e4e4e7;
-  --theme-ink-muted: #d4d4d8;
-  --theme-ink-subtle: #a1a1aa;
-  --theme-ink-faint: #71717a;
-  --theme-ink-placeholder: #71717a;
+  /* Typography / Ink Hierarchy - Soft, glare-free dark mode palette */
+  --theme-ink-primary: #e6e6ea;
+  --theme-ink-secondary: #c8c8cf;
+  --theme-ink-body: #b0b0ba;
+  --theme-ink-muted: #9696a2;
+  --theme-ink-subtle: #7c7c88;
+  --theme-ink-faint: #60606c;
+  --theme-ink-placeholder: #60606c;
 
   /* Primary Contrast CTA (buttons, active pills) */
-  --theme-cta-bg: #f4f4f5;
-  --theme-cta-hover: #ffffff;
+  --theme-cta-bg: #e2e2e6;
+  --theme-cta-hover: #f0f0f4;
   --theme-cta-ink: #09090b;
   --theme-cta-badge-bg: rgba(9, 9, 11, 0.14);
   --theme-cta-badge-ink: #18181b;

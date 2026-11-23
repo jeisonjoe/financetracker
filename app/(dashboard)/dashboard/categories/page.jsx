@@ -355,7 +355,7 @@ export default function CategoriesPage() {
                               {TYPE_LABELS[parent.type] || parent.type}
                             </span>
                             {isSelected && (
-                              <span className="px-2 py-0.5 rounded-full bg-ink-primary text-[10px] text-surface font-medium shrink-0">
+                              <span className="px-2 py-0.5 rounded-full bg-tint-active text-[10px] text-ink-primary border border-line-strong font-medium shrink-0">
                                 Active View
                               </span>
                             )}
@@ -413,7 +413,7 @@ export default function CategoriesPage() {
                           }}
                           className={`px-3 py-1.5 text-xs rounded-full border transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                             isSelected
-                              ? "bg-ink-primary text-surface border-ink-primary font-medium"
+                              ? "bg-tint-active text-ink-primary border-line-strong font-medium"
                               : "text-ink-secondary hover:text-ink-primary bg-surface hover:bg-surface-hover border-line-subtle hover:border-line font-medium"
                           }`}
                           title={`View transactions for ${parent.name}`}
@@ -631,7 +631,7 @@ export default function CategoriesPage() {
               <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-xl bg-surface border border-line-faint">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs text-ink-muted">Period Spend</span>
-                  <span className="text-base font-semibold text-ink-primary tabular-nums">
+                  <span className="text-base font-medium text-ink-primary tabular-nums">
                     {cFormat(
                       activeBreakdownObj?.spent || spentByName.get(selectedCategoryName) || 0,
                       { currency }
@@ -640,7 +640,7 @@ export default function CategoriesPage() {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs text-ink-muted">Monthly Budget</span>
-                  <span className="text-base font-semibold text-ink-primary tabular-nums">
+                  <span className="text-base font-medium text-ink-primary tabular-nums">
                     {Number(activeParentObj?.monthly_budget) > 0
                       ? cFormat(activeParentObj.monthly_budget, { currency })
                       : "No limit set"}
@@ -656,7 +656,7 @@ export default function CategoriesPage() {
                     onClick={() => setSelectedSubcategoryName(null)}
                     className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
                       !selectedSubcategoryName
-                        ? "bg-ink-primary text-surface font-medium shadow-sm"
+                        ? "bg-tint-active text-ink-primary border border-line-strong font-medium"
                         : "text-ink-secondary hover:text-ink-primary bg-surface hover:bg-surface-hover border border-line-subtle hover:border-line"
                     }`}
                   >
@@ -673,7 +673,7 @@ export default function CategoriesPage() {
                         }
                         className={`px-3 py-1 rounded-full text-xs cursor-pointer transition-colors ${
                           isSubActive
-                            ? "bg-ink-primary text-surface font-medium shadow-sm"
+                            ? "bg-tint-active text-ink-primary border border-line-strong font-medium"
                             : "text-ink-secondary hover:text-ink-primary bg-surface hover:bg-surface-hover border border-line-subtle hover:border-line"
                         }`}
                       >
@@ -740,7 +740,7 @@ export default function CategoriesPage() {
 
                           <div className="flex items-center gap-2 shrink-0">
                             <span
-                              className={`text-xs sm:text-sm font-semibold tabular-nums ${
+                              className={`text-xs sm:text-sm font-medium tabular-nums ${
                                 isExpense ? "text-ink-primary" : "text-emerald-500"
                               }`}
                             >
