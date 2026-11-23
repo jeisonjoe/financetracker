@@ -333,7 +333,7 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
               </div>
 
               {/* Day cells grid */}
-              <div className="grid grid-cols-7 gap-y-0.5">
+              <div className="grid grid-cols-7 gap-y-1">
                 {calendarCells.map((cell, idx) => {
                   const { date, isCurrentMonth } = cell;
                   const isToday = isTodayDate(date);
@@ -354,18 +354,33 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
                     (isStart && !rangeEnd) ||
                     (isStart && isEnd && areDatesEqual(rangeStart, rangeEnd));
 
-                  let containerClass = "relative h-8 flex items-center justify-center";
+                  const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+                  const isRowStart = dayOfWeek === 0;
+                  const isRowEnd = dayOfWeek === 6;
+
+                  let containerClass = "relative h-8 flex items-center justify-center w-full";
                   if (isSingleSelected) {
                     containerClass += " bg-transparent";
+                  } else if (isStart && isEnd) {
+                    containerClass += " bg-tint-active rounded-full";
                   } else if (isStart) {
-                    containerClass += " bg-tint-active rounded-l-full";
+                    containerClass += ` bg-tint-active ${isRowEnd ? "rounded-full" : "rounded-l-full"}`;
                   } else if (isEnd) {
-                    containerClass += " bg-tint-active rounded-r-full";
+                    containerClass += ` bg-tint-active ${isRowStart ? "rounded-full" : "rounded-r-full"}`;
                   } else if (isInSelectedRange || isHoverInRange) {
-                    containerClass += " bg-tint rounded-none";
+                    containerClass += " bg-tint";
+                    if (isRowStart && isRowEnd) {
+                      containerClass += " rounded-full";
+                    } else if (isRowStart) {
+                      containerClass += " rounded-l-full";
+                    } else if (isRowEnd) {
+                      containerClass += " rounded-r-full";
+                    } else {
+                      containerClass += " rounded-none";
+                    }
                   }
 
-                  let btnClass = "w-full h-full text-xs font-normal flex items-center justify-center transition-colors cursor-pointer ";
+                  let btnClass = "w-full h-full text-xs flex items-center justify-center transition-colors cursor-pointer ";
                   if (isSingleSelected) {
                     btnClass += "bg-tint-active text-ink-primary font-medium rounded-full";
                   } else if (isStart || isEnd) {
