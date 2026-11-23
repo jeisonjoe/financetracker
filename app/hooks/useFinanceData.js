@@ -69,8 +69,10 @@ export function useTransactionsInfinite({
   wallet = "",
   category = "",
   tag = "",
+  startDate = null,
+  endDate = null,
 } = {}) {
-  const filters = { pageSize, type, search, wallet, category, tag };
+  const filters = { pageSize, type, search, wallet, category, tag, startDate, endDate };
   return useInfiniteQuery({
     queryKey: FINANCE_QUERY_KEYS.transactions(filters),
     initialPageParam: 0,
@@ -83,6 +85,8 @@ export function useTransactionsInfinite({
         wallet,
         category,
         tag,
+        startDate,
+        endDate,
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage?.hasMore ? allPages.length : undefined,

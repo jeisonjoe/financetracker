@@ -10,7 +10,7 @@ const VALID_TYPES = new Set(["income", "expense", "transfer"]);
  * MySQL implementation of ITransactionRepository.
  */
 export class MySqlTransactionRepository extends ITransactionRepository {
-  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "", tag = "" } = {}) {
+  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "", tag = "", startDate = null, endDate = null } = {}) {
     await MySqlSchema.ensure();
     const conditions = ["user_id = ?"];
     const params = [userId];
@@ -18,6 +18,18 @@ export class MySqlTransactionRepository extends ITransactionRepository {
     if (VALID_TYPES.has(type)) {
       conditions.push("type = ?");
       params.push(type);
+    }
+
+    if (startDate) {
+      const isoStart = startDate.includes("T") ? startDate : `${startDate}T00:00:00.000`;
+      conditions.push("created_at >= ?");
+      params.push(MySqlClient.toMysqlDateTime(isoStart));
+    }
+
+    if (endDate) {
+      const isoEnd = endDate.includes("T") ? endDate : `${endDate}T23:59:59.999`;
+      conditions.push("created_at <= ?");
+      params.push(MySqlClient.toMysqlDateTime(isoEnd));
     }
 
     if (search && search.trim()) {

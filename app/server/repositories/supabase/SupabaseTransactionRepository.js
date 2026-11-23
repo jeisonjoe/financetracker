@@ -9,7 +9,7 @@ const VALID_TYPES = new Set(["income", "expense", "transfer"]);
  * Supabase implementation of ITransactionRepository.
  */
 export class SupabaseTransactionRepository extends ITransactionRepository {
-  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "", tag = "" } = {}) {
+  async findByUser(userId, { page = 0, pageSize = 20, type = null, search = "", wallet = "", category = "", tag = "", startDate = null, endDate = null } = {}) {
     const supabase = await SupabaseServerClient.create();
     const limit = Math.max(1, Math.min(Number(pageSize) || 20, 500));
     const offset = Math.max(0, Number(page) || 0) * limit;
@@ -22,6 +22,16 @@ export class SupabaseTransactionRepository extends ITransactionRepository {
 
     if (VALID_TYPES.has(type)) {
       query = query.eq("type", type);
+    }
+
+    if (startDate) {
+      const isoStart = startDate.includes("T") ? startDate : `${startDate}T00:00:00.000`;
+      query = query.gte("created_at", isoStart);
+    }
+
+    if (endDate) {
+      const isoEnd = endDate.includes("T") ? endDate : `${endDate}T23:59:59.999`;
+      query = query.lte("created_at", isoEnd);
     }
 
     // Apply JSON filtering in JS when search/wallet/category/tag filters are active

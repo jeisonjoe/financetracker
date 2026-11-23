@@ -14,6 +14,8 @@ export async function GET(req) {
       wallet: sp.get("wallet") || "",
       category: sp.get("category") || "",
       tag: sp.get("tag") || "",
+      startDate: sp.get("startDate") || null,
+      endDate: sp.get("endDate") || null,
     });
     return NextResponse.json(result);
   });

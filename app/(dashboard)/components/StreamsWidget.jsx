@@ -96,7 +96,7 @@ function CardNetworkLogo({ type = "card", name = "" }) {
 
 export default function StreamsWidget() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const { data, isLoading } = useAnalytics("this_month");
+  const { data, isLoading } = useAnalytics();
   const { user } = useAuth();
   const currency = user?.currency || "INR";
 

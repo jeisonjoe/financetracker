@@ -25,6 +25,7 @@ import LoadingAnim from "@/app/components/LoadingAnim";
 import RenderIcon from "@/app/components/RenderIcon";
 import CategoryDrilldownChart from "@/app/components/charts/CategoryDrilldownChart";
 import { useGlobalPeriod } from "@/app/store/PeriodStore";
+import { getPeriodDateBounds } from "@/app/utils/dateBounds";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   useAnalytics,
@@ -69,9 +70,13 @@ export default function CategoriesPage() {
   const { data: analytics } = useAnalytics(period);
   const { deleteCategory, mergeCategory } = useCategoryMutations();
 
+  const dateBounds = useMemo(() => getPeriodDateBounds(period), [period]);
+
   // Transactions feed for selected category
   const { data: catTxData, isLoading: catTxLoading } = useTransactionsInfinite({
     category: selectedCategoryName || "",
+    startDate: dateBounds.startDate,
+    endDate: dateBounds.endDate,
     pageSize: 50,
   });
 

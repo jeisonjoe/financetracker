@@ -55,7 +55,17 @@ export const AuthApi = {
 };
 
 export const TransactionApi = {
-  list: ({ page = 0, pageSize = 20, type = "", search = "", wallet = "", category = "", tag = "" } = {}) => {
+  list: ({
+    page = 0,
+    pageSize = 20,
+    type = "",
+    search = "",
+    wallet = "",
+    category = "",
+    tag = "",
+    startDate = null,
+    endDate = null,
+  } = {}) => {
     const params = new URLSearchParams({
       page: String(page),
       pageSize: String(pageSize),
@@ -65,6 +75,8 @@ export const TransactionApi = {
     if (wallet) params.set("wallet", wallet);
     if (category) params.set("category", category);
     if (tag) params.set("tag", tag);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
     return http.get(`/api/transactions?${params.toString()}`);
   },
   create: (payload) => http.post("/api/transactions", payload),

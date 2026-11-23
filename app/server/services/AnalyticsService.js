@@ -31,24 +31,107 @@ export class AnalyticsService {
       };
     }
 
-    if (period === "last_month") {
+    if (period === "today") {
+      const start = new Date(year, month, now.getDate(), 0, 0, 0, 0);
+      const end = new Date(year, month, now.getDate(), 23, 59, 59, 999);
+      const todayStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       return {
-        start: new Date(year, month - 1, 1, 0, 0, 0, 0),
-        end: new Date(year, month, 0, 23, 59, 59, 999),
+        start,
+        end,
         isSalaryCycle: false,
+        startDate: todayStr,
+        endDate: todayStr,
+      };
+    }
+
+    if (period === "yesterday") {
+      const yDate = new Date(year, month, now.getDate() - 1);
+      const start = new Date(yDate.getFullYear(), yDate.getMonth(), yDate.getDate(), 0, 0, 0, 0);
+      const end = new Date(yDate.getFullYear(), yDate.getMonth(), yDate.getDate(), 23, 59, 59, 999);
+      const yStr = `${yDate.getFullYear()}-${String(yDate.getMonth() + 1).padStart(2, "0")}-${String(yDate.getDate()).padStart(2, "0")}`;
+      return {
+        start,
+        end,
+        isSalaryCycle: false,
+        startDate: yStr,
+        endDate: yStr,
+      };
+    }
+
+    if (period === "this_week") {
+      const day = now.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const monday = new Date(year, month, now.getDate() - diffToMonday, 0, 0, 0, 0);
+      const end = new Date(year, month, now.getDate() + (6 - diffToMonday), 23, 59, 59, 999);
+      const startStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+      const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+      return {
+        start: monday,
+        end,
+        isSalaryCycle: false,
+        startDate: startStr,
+        endDate: endStr,
+      };
+    }
+
+    if (period === "last_7_days") {
+      const start = new Date(year, month, now.getDate() - 6, 0, 0, 0, 0);
+      const end = new Date(year, month, now.getDate(), 23, 59, 59, 999);
+      const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+      const endStr = `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      return {
+        start,
+        end,
+        isSalaryCycle: false,
+        startDate: startStr,
+        endDate: endStr,
+      };
+    }
+
+    if (period === "last_30_days") {
+      const start = new Date(year, month, now.getDate() - 29, 0, 0, 0, 0);
+      const end = new Date(year, month, now.getDate(), 23, 59, 59, 999);
+      const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+      const endStr = `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      return {
+        start,
+        end,
+        isSalaryCycle: false,
+        startDate: startStr,
+        endDate: endStr,
+      };
+    }
+
+    if (period === "last_month") {
+      const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const end = new Date(year, month, 0, 23, 59, 59, 999);
+      const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+      const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+      return {
+        start,
+        end,
+        isSalaryCycle: false,
+        startDate: startStr,
+        endDate: endStr,
       };
     }
 
     if (period === "last_3_months") {
+      const start = new Date(year, month - 2, 1, 0, 0, 0, 0);
+      const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+      const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
       return {
-        start: new Date(year, month - 2, 1, 0, 0, 0, 0),
-        end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+        start,
+        end,
         isSalaryCycle: false,
+        startDate: startStr,
+        endDate: endStr,
       };
     }
 
     if (period === "all_time") {
-      return { start: null, end: null, isSalaryCycle: false };
+      return { start: null, end: null, isSalaryCycle: false, startDate: null, endDate: null };
     }
 
     if (period === "salary_cycle") {
@@ -82,10 +165,16 @@ export class AnalyticsService {
       }
     }
 
+    const start = new Date(year, month, 1, 0, 0, 0, 0);
+    const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+    const startStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const endStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
     return {
-      start: new Date(year, month, 1, 0, 0, 0, 0),
-      end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+      start,
+      end,
       isSalaryCycle: false,
+      startDate: startStr,
+      endDate: endStr,
     };
   }
 

@@ -18,6 +18,8 @@ import ActionModal from "@/app/components/ActionModal";
 import Dropdown from "@/app/components/Dropdown";
 import Checkbox from "@/app/components/Checkbox";
 import AddTransactionSidebar from "./AddTransactionSidebar";
+import { useGlobalPeriod } from "@/app/store/PeriodStore";
+import { getPeriodDateBounds } from "@/app/utils/dateBounds";
 
 function mapTransaction(txn) {
   const txMeta = txn.transaction || {};
@@ -116,6 +118,9 @@ export default function TransactionsWidget({
     return () => clearTimeout(timer);
   }, [search]);
 
+  const { period } = useGlobalPeriod();
+  const dateBounds = useMemo(() => getPeriodDateBounds(period), [period]);
+
   const {
     data,
     isLoading,
@@ -129,6 +134,8 @@ export default function TransactionsWidget({
     wallet: walletFilter,
     category: categoryFilter,
     tag: tagFilter,
+    startDate: dateBounds.startDate,
+    endDate: dateBounds.endDate,
   });
 
   const categoryFilterOptions = useMemo(() => {

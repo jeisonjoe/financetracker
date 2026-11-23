@@ -1,191 +1,446 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BiCalendar, BiCalendarEvent } from "react-icons/bi";
-import Dropdown from "@/app/components/Dropdown";
-import Modal from "@/app/components/Modal";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BiCalendar,
+  BiCalendarEvent,
+  BiChevronDown,
+  BiChevronLeft,
+  BiChevronRight,
+  BiCheck,
+  BiX,
+} from "react-icons/bi";
+import {
+  getPeriodDateBounds,
+  parseLocalDate,
+  toIsoDate,
+  formatDateLabel,
+  formatShortDate,
+} from "@/app/utils/dateBounds";
 
-export const PERIOD_OPTIONS = [
-  { key: "this_month", name: "This Month" },
-  { key: "salary_cycle", name: "Salary Cycle" },
-  { key: "last_month", name: "Last Month" },
-  { key: "last_3_months", name: "Last 3 Months" },
-  { key: "all_time", name: "All Time" },
-  { key: "custom", name: "Custom Range..." },
+const PRESETS = [
+  { key: "today", label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "this_week", label: "This Week" },
+  { key: "this_month", label: "This Month" },
+  { key: "last_month", label: "Last Month" },
+  { key: "last_30_days", label: "Last 30 Days" },
+  { key: "salary_cycle", label: "Salary Cycle" },
+  { key: "all_time", label: "All Time" },
 ];
 
-function formatDateLabel(dateStr) {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.split("-");
-  if (!y || !m || !d) return dateStr;
-  const date = new Date(Number(y), Number(m) - 1, Number(d));
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function areDatesEqual(d1, d2) {
+  if (!d1 || !d2) return false;
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
+
+function isDateInRange(target, start, end) {
+  if (!target || !start || !end) return false;
+  const t = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+  const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+  const e = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+  const [min, max] = s <= e ? [s, e] : [e, s];
+  return t >= min && t <= max;
 }
 
 export default function PeriodSelector({ value = "this_month", onChange }) {
-  const isCustom = typeof value === "string" && value.startsWith("custom:");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
 
-  const parsedCustomDates = useMemo(() => {
-    if (!isCustom) {
-      const now = new Date();
-      const todayStr = now.toISOString().slice(0, 10);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString()
-        .slice(0, 10);
-      return { start: startOfMonth, end: todayStr };
+  // Compute active bounds from global period value
+  const activeBounds = useMemo(() => getPeriodDateBounds(value), [value]);
+
+  // Current calendar view month/year
+  const [viewDate, setViewDate] = useState(() => {
+    if (activeBounds.startDate) {
+      const p = parseLocalDate(activeBounds.startDate);
+      if (p) return new Date(p.getFullYear(), p.getMonth(), 1);
     }
-    const [start, end] = value.replace("custom:", "").split("_");
-    return {
-      start: start || new Date().toISOString().slice(0, 10),
-      end: end || new Date().toISOString().slice(0, 10),
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  // Range selection states inside the calendar
+  const [rangeStart, setRangeStart] = useState(() =>
+    activeBounds.startDate ? parseLocalDate(activeBounds.startDate) : null
+  );
+  const [rangeEnd, setRangeEnd] = useState(() =>
+    activeBounds.endDate ? parseLocalDate(activeBounds.endDate) : null
+  );
+  const [hoverDate, setHoverDate] = useState(null);
+
+  // Sync internal dates when activeBounds change or popover opens
+  useEffect(() => {
+    if (open) {
+      if (activeBounds.startDate) {
+        const s = parseLocalDate(activeBounds.startDate);
+        const e = parseLocalDate(activeBounds.endDate || activeBounds.startDate);
+        setRangeStart(s);
+        setRangeEnd(e);
+        if (s) setViewDate(new Date(s.getFullYear(), s.getMonth(), 1));
+      } else {
+        setRangeStart(null);
+        setRangeEnd(null);
+        const now = new Date();
+        setViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+      }
+      setHoverDate(null);
+    }
+  }, [open, activeBounds]);
+
+  // Handle click outside & escape
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [value, isCustom]);
+  }, [open]);
 
-  const [startDate, setStartDate] = useState(parsedCustomDates.start);
-  const [endDate, setEndDate] = useState(parsedCustomDates.end);
-
-  const selected = useMemo(() => {
-    if (isCustom) {
-      const [start, end] = value.replace("custom:", "").split("_");
-      return {
-        key: value,
-        name: `${formatDateLabel(start)} – ${formatDateLabel(end)}`,
-      };
-    }
-    return PERIOD_OPTIONS.find((opt) => opt.key === value) || PERIOD_OPTIONS[0];
-  }, [value, isCustom]);
-
-  const dropdownOptions = useMemo(() => {
-    if (isCustom) {
-      return [selected, ...PERIOD_OPTIONS];
-    }
-    return PERIOD_OPTIONS;
-  }, [isCustom, selected]);
-
-  const handleDropdownSelect = (opt) => {
-    if (opt.key === "custom" || opt.key === selected.key && isCustom) {
-      setStartDate(parsedCustomDates.start);
-      setEndDate(parsedCustomDates.end);
-      setModalOpen(true);
-      return;
-    }
-    onChange?.(opt.key);
+  // Month navigation
+  const prevMonth = () => {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+  const nextMonth = () => {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+  const goToToday = () => {
+    const now = new Date();
+    setViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setRangeStart(now);
+    setRangeEnd(now);
   };
 
-  const applyPreset = (daysBack) => {
-    const end = new Date();
-    const start = new Date();
-    if (daysBack === "this_month") {
-      start.setDate(1);
-    } else if (daysBack === "this_year") {
-      start.setMonth(0, 1);
+  // Calendar cells generation
+  const calendarCells = useMemo(() => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const cells = [];
+
+    // Prev month days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      cells.push({
+        date: new Date(year, month - 1, daysInPrevMonth - i),
+        isCurrentMonth: false,
+      });
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push({
+        date: new Date(year, month, d),
+        isCurrentMonth: true,
+      });
+    }
+
+    // Next month days to fill 35 or 42 grid
+    const totalSlots = cells.length > 35 ? 42 : 35;
+    const remaining = totalSlots - cells.length;
+    for (let i = 1; i <= remaining; i++) {
+      cells.push({
+        date: new Date(year, month + 1, i),
+        isCurrentMonth: false,
+      });
+    }
+
+    return cells;
+  }, [viewDate]);
+
+  // Handle day cell click
+  const handleDateClick = (date) => {
+    if (!rangeStart || (rangeStart && rangeEnd)) {
+      // Start a new selection
+      setRangeStart(date);
+      setRangeEnd(null);
     } else {
-      start.setDate(end.getDate() - daysBack);
+      // Complete range selection
+      if (date < rangeStart) {
+        setRangeEnd(rangeStart);
+        setRangeStart(date);
+      } else {
+        setRangeEnd(date);
+      }
     }
-    setStartDate(start.toISOString().slice(0, 10));
-    setEndDate(end.toISOString().slice(0, 10));
   };
 
-  const handleApplyCustom = (e) => {
-    e.preventDefault();
-    if (!startDate || !endDate) return;
-    const finalStart = startDate <= endDate ? startDate : endDate;
-    const finalEnd = startDate <= endDate ? endDate : startDate;
-    onChange?.(`custom:${finalStart}_${finalEnd}`);
-    setModalOpen(false);
+  // Quick preset selection
+  const handleSelectPreset = (key) => {
+    onChange?.(key);
+    setOpen(false);
   };
+
+  // Apply custom range or single date
+  const handleApplyCustom = () => {
+    if (!rangeStart) return;
+    const s = toIsoDate(rangeStart);
+    const e = rangeEnd ? toIsoDate(rangeEnd) : s;
+    const finalStart = s <= e ? s : e;
+    const finalEnd = s <= e ? e : s;
+    onChange?.(`custom:${finalStart}_${finalEnd}`);
+    setOpen(false);
+  };
+
+  // Apply single day only
+  const handleApplySingleDay = (date) => {
+    const d = date || rangeStart || new Date();
+    const iso = toIsoDate(d);
+    onChange?.(`custom:${iso}_${iso}`);
+    setOpen(false);
+  };
+
+  const isTodayDate = (date) => areDatesEqual(date, new Date());
+
+  // Active selection summary text
+  const selectionSummary = useMemo(() => {
+    if (rangeStart && rangeEnd) {
+      if (areDatesEqual(rangeStart, rangeEnd)) {
+        return formatDateLabel(toIsoDate(rangeStart));
+      }
+      const s = rangeStart <= rangeEnd ? rangeStart : rangeEnd;
+      const e = rangeStart <= rangeEnd ? rangeEnd : rangeStart;
+      const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+      return `${formatShortDate(toIsoDate(s))} – ${formatDateLabel(toIsoDate(e))} (${diffDays} days)`;
+    }
+    if (rangeStart) {
+      return `${formatDateLabel(toIsoDate(rangeStart))} (Click end date or Apply Day)`;
+    }
+    return activeBounds.label || "Select date or range";
+  }, [rangeStart, rangeEnd, activeBounds]);
+
+  const activePresetKey = PRESETS.some((p) => p.key === value) ? value : null;
 
   return (
-    <>
-      <div className={isCustom ? "w-44 sm:w-48" : "w-36 sm:w-40"}>
-        <Dropdown
-          options={dropdownOptions}
-          value={selected}
-          onChange={handleDropdownSelect}
-          triggerClass="w-full flex items-center justify-between gap-2 text-ink-body bg-surface-elevated border border-line-subtle px-3.5 py-2 rounded-full text-xs sm:text-sm font-normal hover:bg-surface-hover transition-colors cursor-pointer"
-        />
-      </div>
-
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Custom Date Range"
-        subtitle="Select start and end dates to filter transactions and analytics."
-        maxWidth="max-w-md"
+    <div ref={containerRef} className="relative">
+      {/* Trigger Button */}
+      <button
+        type="button"
+        aria-label="Select Date Period"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-surface-elevated hover:bg-surface-hover border border-line-subtle text-ink-primary text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none"
       >
-        <form onSubmit={handleApplyCustom} className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-1.5 pb-1">
-            <span className="text-[11px] text-ink-subtle mr-1">Presets:</span>
-            {[
-              { label: "Last 7 Days", days: 7 },
-              { label: "Last 30 Days", days: 30 },
-              { label: "This Month", days: "this_month" },
-              { label: "This Year", days: "this_year" },
-            ].map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                onClick={() => applyPreset(p.days)}
-                className="px-2.5 py-1 rounded-full text-xs bg-surface-elevated hover:bg-surface-hover border border-line-subtle text-ink-secondary transition-colors cursor-pointer"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+        <BiCalendar size={16} className="text-ink-secondary shrink-0" />
+        <span className="truncate max-w-[150px] sm:max-w-[210px]">
+          {activeBounds.label || "Select Period"}
+        </span>
+        <BiChevronDown
+          size={16}
+          className={`text-ink-subtle shrink-0 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-ink-subtle">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-                className="bg-surface-elevated border border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink-primary focus:outline-none focus:border-line-focus cursor-pointer"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-ink-subtle">End Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-                className="bg-surface-elevated border border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink-primary focus:outline-none focus:border-line-focus cursor-pointer"
-              />
-            </div>
-          </div>
-
-          {startDate && endDate && (
-            <div className="p-3 bg-surface-elevated/60 rounded-xl border border-line-subtle text-xs text-ink-subtle flex items-center gap-2">
-              <BiCalendarEvent size={16} className="text-accent shrink-0" />
-              <span>
-                Filtering period:{" "}
-                <span className="font-medium text-ink-primary">
-                  {formatDateLabel(startDate)} – {formatDateLabel(endDate)}
-                </span>
+      {/* Popover */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 z-50 bg-surface-elevated border border-line-subtle rounded-2xl shadow-2xl p-4 w-[340px] sm:w-[500px] flex flex-col gap-3.5 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Presets Sidebar */}
+            <div className="sm:w-[130px] shrink-0 flex flex-row sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible pb-1 sm:pb-0 sm:border-r border-line-subtle sm:pr-3">
+              <span className="hidden sm:block text-[11px] font-medium text-ink-subtle px-2 pb-1.5">
+                Presets
               </span>
+              {PRESETS.map((p) => {
+                const isActive = activePresetKey === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => handleSelectPreset(p.key)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left whitespace-nowrap transition-colors cursor-pointer flex items-center justify-between ${
+                      isActive
+                        ? "bg-tint-active text-ink-primary"
+                        : "text-ink-muted hover:text-ink-primary hover:bg-tint"
+                    }`}
+                  >
+                    <span>{p.label}</span>
+                    {isActive && <BiCheck size={14} className="shrink-0" />}
+                  </button>
+                );
+              })}
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 rounded-full text-sm bg-surface-elevated text-ink-body hover:bg-surface-hover cursor-pointer transition-all active:scale-[0.97]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-full text-sm font-medium bg-cta text-cta-ink hover:bg-cta-hover cursor-pointer transition-all active:scale-[0.97]"
-            >
-              Apply Range
-            </button>
+            {/* Calendar & Range Section */}
+            <div className="flex-1 flex flex-col gap-2.5 min-w-0">
+              {/* Month Navigator Header */}
+              <div className="flex items-center justify-between px-1">
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  aria-label="Previous Month"
+                  className="p-1.5 rounded-lg text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
+                >
+                  <BiChevronLeft size={18} />
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-medium text-ink-primary">
+                    {viewDate.toLocaleString("en-US", { month: "long" })}{" "}
+                    {viewDate.getFullYear()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={goToToday}
+                    className="text-[11px] px-2 py-0.5 rounded-full bg-tint hover:bg-tint-hover text-ink-secondary transition-colors cursor-pointer font-medium"
+                  >
+                    Today
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  aria-label="Next Month"
+                  className="p-1.5 rounded-lg text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
+                >
+                  <BiChevronRight size={18} />
+                </button>
+              </div>
+
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 text-center">
+                {WEEKDAYS.map((w) => (
+                  <div
+                    key={w}
+                    className="text-[11px] font-medium text-ink-subtle py-1"
+                  >
+                    {w}
+                  </div>
+                ))}
+              </div>
+
+              {/* Day cells grid */}
+              <div className="grid grid-cols-7 gap-y-1">
+                {calendarCells.map((cell, idx) => {
+                  const { date, isCurrentMonth } = cell;
+                  const isToday = isTodayDate(date);
+                  const isStart = rangeStart && areDatesEqual(date, rangeStart);
+                  const isEnd = rangeEnd && areDatesEqual(date, rangeEnd);
+                  const isHoverInRange =
+                    rangeStart &&
+                    !rangeEnd &&
+                    hoverDate &&
+                    isDateInRange(date, rangeStart, hoverDate);
+                  const isInSelectedRange =
+                    rangeStart &&
+                    rangeEnd &&
+                    isDateInRange(date, rangeStart, rangeEnd);
+
+                  const isRangeBoundary = isStart || isEnd;
+                  const isSingleSelected =
+                    (isStart && !rangeEnd) ||
+                    (isStart && isEnd && areDatesEqual(rangeStart, rangeEnd));
+
+                  let cellBg = "";
+                  if (isSingleSelected) {
+                    cellBg = "bg-tint-active text-ink-primary font-medium rounded-full";
+                  } else if (isStart) {
+                    cellBg = "bg-tint-active text-ink-primary font-medium rounded-l-full";
+                  } else if (isEnd) {
+                    cellBg = "bg-tint-active text-ink-primary font-medium rounded-r-full";
+                  } else if (isInSelectedRange || isHoverInRange) {
+                    cellBg = "bg-tint text-ink-primary rounded-none";
+                  } else {
+                    cellBg = isCurrentMonth
+                      ? "text-ink-body hover:bg-tint rounded-full"
+                      : "text-ink-faint hover:bg-tint/50 rounded-full";
+                  }
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex items-center justify-center p-0.5 ${
+                        (isInSelectedRange || isHoverInRange) && !isSingleSelected
+                          ? "bg-tint/40"
+                          : ""
+                      } ${isStart ? "rounded-l-full" : ""} ${
+                        isEnd ? "rounded-r-full" : ""
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleDateClick(date)}
+                        onMouseEnter={() => setHoverDate(date)}
+                        className={`w-8 h-8 text-xs flex items-center justify-center transition-colors cursor-pointer ${cellBg} ${
+                          isToday && !isRangeBoundary
+                            ? "ring-1 ring-line-focus font-medium"
+                            : ""
+                        }`}
+                      >
+                        {date.getDate()}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </form>
-      </Modal>
-    </>
+
+          {/* Selection Banner & Bottom Actions */}
+          <div className="pt-3 border-t border-line-subtle flex flex-col sm:flex-row items-center justify-between gap-2.5">
+            <div className="text-[11px] text-ink-secondary truncate max-w-full flex items-center gap-1.5">
+              <BiCalendarEvent size={14} className="text-accent shrink-0" />
+              <span className="truncate">{selectionSummary}</span>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              {rangeStart && !rangeEnd && (
+                <button
+                  type="button"
+                  onClick={() => handleApplySingleDay(rangeStart)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-tint hover:bg-tint-hover text-ink-primary transition-colors cursor-pointer"
+                >
+                  This Day Only
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="px-3 py-1.5 rounded-full text-xs text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={!rangeStart}
+                onClick={handleApplyCustom}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all active:scale-[0.97] cursor-pointer ${
+                  rangeStart
+                    ? "bg-cta text-cta-ink hover:bg-cta-hover"
+                    : "bg-surface-elevated text-ink-faint cursor-not-allowed opacity-50"
+                }`}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

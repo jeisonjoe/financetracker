@@ -746,6 +746,20 @@ test("AnalyticsService nets reversals, tracks friend splits, computes micro-spen
   assert.equal(salaryBounds.isSalaryCycle, true);
   assert.equal(salaryBounds.payday, 29);
   assert.equal(salaryBounds.salaryAmount, 60000);
+
+  // New presets & custom date range bounds
+  const todayBounds = analytics.getPeriodBounds("today");
+  assert.ok(todayBounds.startDate);
+  assert.equal(todayBounds.startDate, todayBounds.endDate);
+
+  const yesterdayBounds = analytics.getPeriodBounds("yesterday");
+  assert.ok(yesterdayBounds.startDate);
+  assert.equal(yesterdayBounds.startDate, yesterdayBounds.endDate);
+
+  const customBounds = analytics.getPeriodBounds("custom:2026-11-01_2026-11-15");
+  assert.equal(customBounds.startDate, "2026-11-01");
+  assert.equal(customBounds.endDate, "2026-11-15");
+  assert.equal(customBounds.isCustom, true);
 });
 
 test("Subcategory hierarchy, individual subcategory budgets, and transaction categorization", async () => {
