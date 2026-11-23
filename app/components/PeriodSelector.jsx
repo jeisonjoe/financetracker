@@ -256,10 +256,10 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
 
       {/* Popover */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 bg-surface-elevated border border-line-subtle rounded-2xl shadow-2xl p-4 w-[340px] sm:w-[500px] flex flex-col gap-3.5 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="absolute right-0 top-full mt-2 z-50 bg-surface-elevated border border-line-subtle rounded-2xl shadow-2xl p-4 w-[320px] sm:w-[440px] flex flex-col gap-3 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex flex-col sm:flex-row gap-3.5">
             {/* Presets Sidebar */}
-            <div className="sm:w-[130px] shrink-0 flex flex-row sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible pb-1 sm:pb-0 sm:border-r border-line-subtle sm:pr-3">
+            <div className="sm:w-[115px] shrink-0 flex flex-row sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible pb-1 sm:pb-0 sm:border-r border-line-subtle sm:pr-2.5">
               <span className="hidden sm:block text-[11px] font-medium text-ink-subtle px-2 pb-1.5">
                 Presets
               </span>
@@ -270,7 +270,7 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
                     key={p.key}
                     type="button"
                     onClick={() => handleSelectPreset(p.key)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left whitespace-nowrap transition-colors cursor-pointer flex items-center justify-between ${
+                    className={`px-2 py-1.5 rounded-lg text-xs font-medium text-left whitespace-nowrap transition-colors cursor-pointer flex items-center justify-between ${
                       isActive
                         ? "bg-tint-active text-ink-primary"
                         : "text-ink-muted hover:text-ink-primary hover:bg-tint"
@@ -284,14 +284,14 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
             </div>
 
             {/* Calendar & Range Section */}
-            <div className="flex-1 flex flex-col gap-2.5 min-w-0">
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
               {/* Month Navigator Header */}
               <div className="flex items-center justify-between px-1">
                 <button
                   type="button"
                   onClick={prevMonth}
                   aria-label="Previous Month"
-                  className="p-1.5 rounded-lg text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
                 >
                   <BiChevronLeft size={18} />
                 </button>
@@ -314,7 +314,7 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
                   type="button"
                   onClick={nextMonth}
                   aria-label="Next Month"
-                  className="p-1.5 rounded-lg text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-ink-muted hover:text-ink-primary hover:bg-tint transition-colors cursor-pointer"
                 >
                   <BiChevronRight size={18} />
                 </button>
@@ -333,7 +333,7 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
               </div>
 
               {/* Day cells grid */}
-              <div className="grid grid-cols-7 gap-y-1">
+              <div className="grid grid-cols-7 gap-y-0.5">
                 {calendarCells.map((cell, idx) => {
                   const { date, isCurrentMonth } = cell;
                   const isToday = isTodayDate(date);
@@ -354,41 +354,41 @@ export default function PeriodSelector({ value = "this_month", onChange }) {
                     (isStart && !rangeEnd) ||
                     (isStart && isEnd && areDatesEqual(rangeStart, rangeEnd));
 
-                  let cellBg = "";
+                  let containerClass = "relative h-8 flex items-center justify-center";
                   if (isSingleSelected) {
-                    cellBg = "bg-tint-active text-ink-primary font-medium rounded-full";
+                    containerClass += " bg-transparent";
                   } else if (isStart) {
-                    cellBg = "bg-tint-active text-ink-primary font-medium rounded-l-full";
+                    containerClass += " bg-tint-active rounded-l-full";
                   } else if (isEnd) {
-                    cellBg = "bg-tint-active text-ink-primary font-medium rounded-r-full";
+                    containerClass += " bg-tint-active rounded-r-full";
                   } else if (isInSelectedRange || isHoverInRange) {
-                    cellBg = "bg-tint text-ink-primary rounded-none";
+                    containerClass += " bg-tint rounded-none";
+                  }
+
+                  let btnClass = "w-full h-full text-xs font-normal flex items-center justify-center transition-colors cursor-pointer ";
+                  if (isSingleSelected) {
+                    btnClass += "bg-tint-active text-ink-primary font-medium rounded-full";
+                  } else if (isStart || isEnd) {
+                    btnClass += "text-ink-primary font-medium";
+                  } else if (isInSelectedRange || isHoverInRange) {
+                    btnClass += "text-ink-primary font-normal";
+                  } else if (isCurrentMonth) {
+                    btnClass += "text-ink-body hover:bg-tint rounded-full";
                   } else {
-                    cellBg = isCurrentMonth
-                      ? "text-ink-body hover:bg-tint rounded-full"
-                      : "text-ink-faint hover:bg-tint/50 rounded-full";
+                    btnClass += "text-ink-faint hover:bg-tint/50 rounded-full";
+                  }
+
+                  if (isToday && !isRangeBoundary && !isSingleSelected) {
+                    btnClass += " ring-1 ring-line-focus font-medium";
                   }
 
                   return (
-                    <div
-                      key={idx}
-                      className={`flex items-center justify-center p-0.5 ${
-                        (isInSelectedRange || isHoverInRange) && !isSingleSelected
-                          ? "bg-tint/40"
-                          : ""
-                      } ${isStart ? "rounded-l-full" : ""} ${
-                        isEnd ? "rounded-r-full" : ""
-                      }`}
-                    >
+                    <div key={idx} className={containerClass}>
                       <button
                         type="button"
                         onClick={() => handleDateClick(date)}
                         onMouseEnter={() => setHoverDate(date)}
-                        className={`w-8 h-8 text-xs flex items-center justify-center transition-colors cursor-pointer ${cellBg} ${
-                          isToday && !isRangeBoundary
-                            ? "ring-1 ring-line-focus font-medium"
-                            : ""
-                        }`}
+                        className={btnClass}
                       >
                         {date.getDate()}
                       </button>
