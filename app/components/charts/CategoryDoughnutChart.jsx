@@ -51,7 +51,8 @@ export default function CategoryDoughnutChart({
 
     const chart = root.container.children.push(
       am5percent.PieChart.new(root, {
-        innerRadius: am5.percent(72),
+        innerRadius: am5.percent(64),
+        radius: am5.percent(96),
         paddingTop: 0,
         paddingBottom: 0,
         paddingLeft: 0,
@@ -64,6 +65,8 @@ export default function CategoryDoughnutChart({
         valueField: "spent",
         categoryField: "name",
         alignLabels: false,
+        radius: am5.percent(96),
+        innerRadius: am5.percent(64),
         tooltip: createAmTooltip(root, currency),
       })
     );

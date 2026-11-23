@@ -10,7 +10,7 @@ import { AM_COLORS, AM_PALETTE, createAmChartsRoot, createAmTooltip } from "./Am
 export default function CategoryDrilldownChart({
   categories = [],
   currency = "INR",
-  height = 240,
+  height = 290,
 }) {
   const chartRef = useRef(null);
   const chartId = useId();
@@ -95,11 +95,12 @@ export default function CategoryDrilldownChart({
     const chart = root.container.children.push(
       am5percent.PieChart.new(root, {
         layout: root.verticalLayout,
-        innerRadius: am5.percent(70),
-        paddingTop: 4,
-        paddingBottom: 4,
-        paddingLeft: 4,
-        paddingRight: 4,
+        innerRadius: am5.percent(64),
+        radius: am5.percent(96),
+        paddingTop: 0,
+        paddingBottom: 0,
+        paddingLeft: 0,
+        paddingRight: 0,
       })
     );
 
@@ -108,6 +109,8 @@ export default function CategoryDrilldownChart({
         valueField: "spent",
         categoryField: "name",
         alignLabels: false,
+        radius: am5.percent(96),
+        innerRadius: am5.percent(64),
         tooltip: createAmTooltip(root, currency),
       })
     );
@@ -215,14 +218,14 @@ export default function CategoryDrilldownChart({
 
         {/* Center Readout */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
-          <span className="text-[11px] text-ink-subtle font-normal truncate max-w-[120px]">
+          <span className="text-xs text-ink-subtle font-normal truncate max-w-[140px]">
             {centerDisplayTitle}
           </span>
-          <span className="text-sm font-semibold text-ink-primary tabular-nums">
+          <span className="text-base sm:text-lg font-semibold text-ink-primary tabular-nums">
             {cFormat(centerDisplayAmount, { currency })}
           </span>
           {hoveredItem && (
-            <span className="text-[10px] text-ink-muted">
+            <span className="text-xs text-ink-muted">
               {hoveredItem.pct}%
             </span>
           )}

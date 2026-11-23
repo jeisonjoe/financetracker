@@ -845,14 +845,13 @@ export default function CategoriesPage() {
                       <CategoryDrilldownChart
                         categories={breakdown}
                         currency={currency}
-                        height={200}
-                        cutout="70%"
+                        height={290}
                       />
                     ) : (
                       <SpendingTrendLineChart
                         dailyTrend={analytics?.dailyTrend || []}
                         currency={currency}
-                        height={180}
+                        height={220}
                       />
                     )}
                   </div>
