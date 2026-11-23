@@ -113,7 +113,7 @@ export default function TagSpendChart({
 
     series.get("tooltip").label.set(
       "text",
-      "[#a1a1aa]{categoryY}:[/] [#e6e6ea font-medium]{valueX.formatNumber('#,###')} " + currency + "[/]"
+      "[#a1a1aa]{categoryY}:[/] [#e6e6ea]{valueX.formatNumber('#,###')} " + currency + "[/]"
     );
 
     series.data.setAll(data);

@@ -76,8 +76,9 @@ export function createAmTooltip(root, currency = "INR") {
   });
 
   tooltip.label.setAll({
-    fill: am5.color("#f4f4f5"),
+    fill: am5.color("#e6e6ea"),
     fontSize: 12,
+    fontWeight: "500",
     fontFamily: "var(--font-inter, system-ui, sans-serif)",
   });
 

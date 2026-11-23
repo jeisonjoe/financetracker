@@ -141,7 +141,7 @@ export default function DailySpendBenchmarkChart({
 
     series.get("tooltip").label.set(
       "text",
-      "[#a1a1aa]{categoryX}:[/] [#e6e6ea font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
+      "[#a1a1aa]{categoryX}:[/] [#e6e6ea]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     series.data.setAll(data);

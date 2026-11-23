@@ -110,7 +110,7 @@ export default function CashflowBarChart({
 
     incomeSeries.get("tooltip").label.set(
       "text",
-      "[#a1a1aa]{categoryX} Income:[/] [#4ade80 font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
+      "[#a1a1aa]{categoryX} Income:[/] [#4ade80]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     // Expense Column Series (Coral/Accent)
@@ -142,7 +142,7 @@ export default function CashflowBarChart({
 
     expenseSeries.get("tooltip").label.set(
       "text",
-      "[#a1a1aa]{categoryX} Expense:[/] [#e16449 font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
+      "[#a1a1aa]{categoryX} Expense:[/] [#e16449]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     incomeSeries.data.setAll(data);

@@ -111,7 +111,7 @@ export default function RunwayLineChart({
 
       trajectorySeries.get("tooltip").label.set(
         "text",
-        "[#a1a1aa]{categoryX} Safe Runway:[/] [#4ade80 font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
+        "[#a1a1aa]{categoryX} Safe Runway:[/] [#4ade80]{valueY.formatNumber('#,###')} " + currency + "[/]"
       );
 
       trajectorySeries.data.setAll(chartData);
@@ -157,7 +157,7 @@ export default function RunwayLineChart({
 
     actualSeries.get("tooltip").label.set(
       "text",
-      "[#a1a1aa]{categoryX} Actual Spend:[/] [#e16449 font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
+      "[#a1a1aa]{categoryX} Actual Spend:[/] [#e16449]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     actualSeries.data.setAll(chartData);

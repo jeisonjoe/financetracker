@@ -139,7 +139,7 @@ export default function CategoryDrilldownChart({
     }));
 
     // Tooltip format
-    series.slices.template.set("tooltipText", "[#a1a1aa]{category}:[/] [#e6e6ea font-medium]{value.formatNumber('#,###')} " + currency + "[/] [#c8c8cf]({valuePercentTotal.formatNumber('0.0')}%) [/]");
+    series.slices.template.set("tooltipText", "[#a1a1aa]{category}:[/] [#e6e6ea]{value.formatNumber('#,###')} " + currency + "[/] [#c8c8cf]({valuePercentTotal.formatNumber('0.0')}%) [/]");
 
     // Click slice to drilldown
     series.slices.template.events.on("click", (ev) => {
