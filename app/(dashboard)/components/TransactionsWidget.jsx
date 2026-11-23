@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/app/contexts/AuthContext";
 import ActionModal from "@/app/components/ActionModal";
 import Dropdown from "@/app/components/Dropdown";
+import Checkbox from "@/app/components/Checkbox";
 import AddTransactionSidebar from "./AddTransactionSidebar";
 
 function mapTransaction(txn) {
@@ -458,13 +459,12 @@ export default function TransactionsWidget({
                       onDoubleClick={() => handleEdit(item)}
                     >
                       <div className="flex gap-2.5 items-center flex-1 min-w-0">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={isSelected}
                           onChange={() => handleToggleSelect(item.id)}
                           onClick={(e) => e.stopPropagation()}
-                          className="accent-ink-primary cursor-pointer shrink-0"
-                          title="Select transaction"
+                          size="sm"
+                          ariaLabel="Select transaction"
                         />
 
                         <div

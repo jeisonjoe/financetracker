@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import IconPicker from "@/app/components/IconPicker";
 import Dropdown from "@/app/components/Dropdown";
+import Checkbox from "@/app/components/Checkbox";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
 import { useCategoriesQuery, useCategoryMutations } from "@/app/hooks/useFinanceData";
@@ -272,20 +273,13 @@ export default function AddCategoryPane({
             </div>
 
             {/* Budget Rollover Toggle */}
-            <div className="p-3 bg-surface border border-line-subtle rounded-xl flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-ink-primary">
-                  Budget Rollover (Carryover)
-                </span>
-                <span className="text-[11px] text-ink-subtle">
-                  Carry over unspent budget or deficit to following months
-                </span>
-              </div>
-              <input
-                type="checkbox"
+            <div className="p-3.5 bg-surface border border-line-subtle rounded-xl flex items-center justify-between gap-3">
+              <Checkbox
                 checked={rollover}
-                onChange={(e) => setRollover(e.target.checked)}
-                className="accent-ink-primary cursor-pointer w-4 h-4"
+                onChange={setRollover}
+                label="Budget Rollover (Carryover)"
+                description="Carry over unspent budget or deficit to following months"
+                size="md"
               />
             </div>
           </>

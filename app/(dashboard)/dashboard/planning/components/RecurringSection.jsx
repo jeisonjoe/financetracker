@@ -26,6 +26,7 @@ import ActionModal from "@/app/components/ActionModal";
 import DatePicker from "@/app/components/DatePicker";
 import Dropdown from "@/app/components/Dropdown";
 import Modal from "@/app/components/Modal";
+import Checkbox from "@/app/components/Checkbox";
 import AnimatedNumber from "@/app/components/AnimatedNumber";
 
 const EMPTY_FORM = {
@@ -687,17 +688,12 @@ export default function RecurringSection({ planning, currency }) {
           </div>
 
           {form.type === "expense" && (
-            <label className="flex items-center gap-2.5 text-xs text-ink-body cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.auto_reserve}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, auto_reserve: e.target.checked }))
-                }
-                className="rounded accent-cta"
-              />
-              Reserve this bill in my monthly committed cashflow plan
-            </label>
+            <Checkbox
+              checked={form.auto_reserve}
+              onChange={(val) => setForm((p) => ({ ...p, auto_reserve: val }))}
+              label="Reserve this bill in my monthly committed cashflow plan"
+              size="sm"
+            />
           )}
 
           <div className="flex justify-end gap-2 pt-2">

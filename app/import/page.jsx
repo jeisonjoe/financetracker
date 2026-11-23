@@ -14,6 +14,7 @@ import {
 } from "react-icons/bi";
 import { toast } from "sonner";
 import Dropdown from "@/app/components/Dropdown";
+import Checkbox from "@/app/components/Checkbox";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   useCategoriesQuery,
@@ -762,21 +763,20 @@ export default function ImportPage() {
                     {cFormat(statementReconciliation.totalDebits, { currency })} ={" "}
                     {cFormat(statementReconciliation.calculatedClosing, { currency })}
                   </span>
-                  <label className="inline-flex items-center gap-2 text-xs text-ink-secondary cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={alignWalletBalance}
-                      onChange={(e) => setAlignWalletBalance(e.target.checked)}
-                      className="accent-ink-primary cursor-pointer"
-                    />
-                    <span>
-                      Auto-align <span className="font-medium text-ink-primary">{targetWallet || "wallet"}</span> balance to match statement closing balance (
-                      <span className="font-semibold text-ink-primary">
-                        {cFormat(statementReconciliation.closingBalance, { currency })}
+                  <Checkbox
+                    checked={alignWalletBalance}
+                    onChange={setAlignWalletBalance}
+                    label={
+                      <span>
+                        Auto-align <span className="font-medium text-ink-primary">{targetWallet || "wallet"}</span> balance to match statement closing balance (
+                        <span className="font-medium text-ink-primary">
+                          {cFormat(statementReconciliation.closingBalance, { currency })}
+                        </span>
+                        )
                       </span>
-                      )
-                    </span>
-                  </label>
+                    }
+                    size="sm"
+                  />
                 </div>
               </div>
             )}
@@ -810,18 +810,19 @@ export default function ImportPage() {
               <div className="border border-line-subtle rounded-2xl overflow-hidden bg-surface-elevated/40 flex flex-col">
                 <div className="bg-surface-elevated px-4 py-3.5 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
-                    <label className="inline-flex items-center gap-2 cursor-pointer text-ink-secondary">
-                      <input
-                        type="checkbox"
-                        checked={
-                          statementRows.length > 0 &&
-                          selectedRows.length === statementRows.length
-                        }
-                        onChange={(e) => toggleAllRows(e.target.checked)}
-                        className="accent-ink-primary cursor-pointer"
-                      />
-                      <span>Select all ({statementRows.length})</span>
-                    </label>
+                    <Checkbox
+                      checked={
+                        statementRows.length > 0 &&
+                        selectedRows.length === statementRows.length
+                      }
+                      indeterminate={
+                        selectedRows.length > 0 &&
+                        selectedRows.length < statementRows.length
+                      }
+                      onChange={toggleAllRows}
+                      label={`Select all (${statementRows.length})`}
+                      size="sm"
+                    />
 
                     {duplicateCount > 0 && (
                       <span className="px-2.5 py-0.5 rounded-full bg-tint text-ink-muted text-xs">
@@ -845,15 +846,12 @@ export default function ImportPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4">
-                    <label className="inline-flex items-center gap-2 text-xs text-ink-muted cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={autoCreateCategories}
-                        onChange={(e) => setAutoCreateCategories(e.target.checked)}
-                        className="accent-ink-primary cursor-pointer"
-                      />
-                      <span>Auto-create new suggested categories</span>
-                    </label>
+                    <Checkbox
+                      checked={autoCreateCategories}
+                      onChange={setAutoCreateCategories}
+                      label="Auto-create new suggested categories"
+                      size="sm"
+                    />
 
                     <button
                       type="button"
@@ -1000,13 +998,13 @@ export default function ImportPage() {
                             }`}
                           >
                             <td className="px-4 py-3">
-                              <input
-                                type="checkbox"
+                              <Checkbox
                                 checked={row.selected}
-                                onChange={(e) =>
-                                  updateRow(row.rowId, { selected: e.target.checked })
+                                onChange={(checked) =>
+                                  updateRow(row.rowId, { selected: checked })
                                 }
-                                className="accent-ink-primary cursor-pointer"
+                                size="sm"
+                                ariaLabel={`Select transaction on ${row.date}`}
                               />
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-muted tabular-nums">

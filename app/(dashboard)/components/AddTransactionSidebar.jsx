@@ -2,6 +2,7 @@
 
 import Calendar from "@/app/components/Calender";
 import Dropdown from "@/app/components/Dropdown";
+import Checkbox from "@/app/components/Checkbox";
 import HierarchicalCategorySelect from "@/app/components/HierarchicalCategorySelect";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRhsSidebarStore } from "@/app/store/RhsSidebarStore";
@@ -450,15 +451,12 @@ export default function AddTransactionSidebar(props) {
         {/* Friend Split & Lending */}
         {type !== "transfer" && (
           <div className="flex flex-col gap-2 p-3 bg-surface border border-line-subtle rounded-xl">
-            <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink-secondary">
-              <input
-                type="checkbox"
-                checked={isSplit}
-                onChange={(e) => setIsSplit(e.target.checked)}
-                className="accent-ink-primary cursor-pointer"
-              />
-              <span>Tag as Friend Split / Lending</span>
-            </label>
+            <Checkbox
+              checked={isSplit}
+              onChange={setIsSplit}
+              label="Tag as Friend Split / Lending"
+              size="sm"
+            />
 
             {isSplit && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-line-faint">
@@ -541,15 +539,12 @@ export default function AddTransactionSidebar(props) {
         {type === "expense" && (
           <div className="flex flex-col gap-2.5 p-3.5 bg-surface border border-line-subtle rounded-xl">
             <div className="flex items-center justify-between">
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink-secondary">
-                <input
-                  type="checkbox"
-                  checked={hasCategorySplits}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setHasCategorySplits(checked);
-                    if (checked && categorySplits.length === 0) {
-                      const initialAmount = Math.round(Number(data.amount) / 2) || 0;
+              <Checkbox
+                checked={hasCategorySplits}
+                onChange={(checked) => {
+                  setHasCategorySplits(checked);
+                  if (checked && categorySplits.length === 0) {
+                    const initialAmount = Math.round(Number(data.amount) / 2) || 0;
                       setCategorySplits([
                         {
                           id: "split-1",
@@ -566,10 +561,9 @@ export default function AddTransactionSidebar(props) {
                       ]);
                     }
                   }}
-                  className="accent-ink-primary cursor-pointer"
+                  label="Split across multiple categories (Itemized)"
+                  size="sm"
                 />
-                <span>Split across multiple categories (Itemized)</span>
-              </label>
 
               {hasCategorySplits && (
                 <button
@@ -739,17 +733,13 @@ export default function AddTransactionSidebar(props) {
 
         {/* Auto-categorization rule reminder */}
         {data.note && category.name && (
-          <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink-subtle pl-1">
-            <input
-              type="checkbox"
-              checked={rememberRule}
-              onChange={(e) => setRememberRule(e.target.checked)}
-              className="accent-ink-primary cursor-pointer"
-            />
-            <span>
-              Always categorize future transactions for &quot;{data.note}&quot; as {category.name}
-            </span>
-          </label>
+          <Checkbox
+            checked={rememberRule}
+            onChange={setRememberRule}
+            label={`Always categorize future transactions for "${data.note}" as ${category.name}`}
+            size="sm"
+            className="pl-1"
+          />
         )}
 
         <div className="relative flex flex-col gap-2" ref={calendarRef}>
