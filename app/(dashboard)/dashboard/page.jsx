@@ -419,8 +419,8 @@ export default function Page() {
             ) : trendChartType === "limit" ? (
               <DailySpendBenchmarkChart
                 dailyTrend={dailyTrend}
-                dailyAllowance={analyticsData?.spendingPace?.dailyAllowance || 0}
-                avgDailySpend={analyticsData?.spendingPace?.avgDailySpend || 0}
+                dailyAllowance={pace.dailyAllowance || 0}
+                avgDailySpend={pace.avgDailySpend || 0}
                 currency={currency}
                 height={140}
               />
