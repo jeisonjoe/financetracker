@@ -71,7 +71,7 @@ export default function WalletDistributionChart({
 
     series.slices.template.set(
       "tooltipText",
-      "{category}: [medium]{value.formatNumber('#,###')}[/] " + currency + " ({valuePercentTotal.formatNumber('0.0')}%)"
+      "[#a1a1aa]{category}:[/] [#e6e6ea font-medium]{value.formatNumber('#,###')} " + currency + "[/] [#c8c8cf]({valuePercentTotal.formatNumber('0.0')}%) [/]"
     );
 
     series.slices.template.events.on("pointerover", (ev) => {

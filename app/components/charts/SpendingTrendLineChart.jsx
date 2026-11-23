@@ -124,7 +124,7 @@ export default function SpendingTrendLineChart({
     // Tooltip format
     series.get("tooltip").label.set(
       "text",
-      "{categoryX}: [medium]{valueY.formatNumber('#,###')}[/] " + currency + " (Total to date)"
+      "[#a1a1aa]{categoryX}:[/] [#e6e6ea font-medium]{valueY.formatNumber('#,###')} " + currency + "[/] [#c8c8cf](Total to date)[/]"
     );
 
     series.data.setAll(data);

@@ -362,11 +362,6 @@ export default function CategoriesPage() {
                             <span className="px-2 py-0.5 rounded-full bg-tint text-[11px] text-ink-secondary border border-line-subtle shrink-0 font-medium">
                               {TYPE_LABELS[parent.type] || parent.type}
                             </span>
-                            {isSelected && (
-                              <span className="px-2 py-0.5 rounded-full bg-tint-active text-[10px] text-ink-primary border border-line-strong font-medium shrink-0">
-                                Active View
-                              </span>
-                            )}
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">

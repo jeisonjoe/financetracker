@@ -2,6 +2,7 @@
 
 import * as am5 from "@amcharts/amcharts5";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import am5themes_Dark from "@amcharts/amcharts5/themes/Dark";
 import { cFormat } from "@/app/utils/currencyFormat";
 
 /**
@@ -40,8 +41,11 @@ export function createAmChartsRoot(container) {
   if (!container) return null;
   const root = am5.Root.new(container);
 
-  // Animated theme
-  root.setThemes([am5themes_Animated.new(root)]);
+  // Animated and Dark themes
+  root.setThemes([
+    am5themes_Animated.new(root),
+    am5themes_Dark.new(root),
+  ]);
 
   // Remove watermark if present
   if (root._logo) {
@@ -61,15 +65,18 @@ export function createAmTooltip(root, currency = "INR") {
   });
 
   tooltip.get("background").setAll({
-    fill: AM_COLORS.surfaceElevated,
-    fillOpacity: 0.95,
-    stroke: AM_COLORS.borderSubtle,
+    fill: am5.color("#18181b"),
+    fillOpacity: 0.98,
+    stroke: am5.color("#3f3f46"),
     strokeWidth: 1,
     cornerRadius: 8,
+    shadowColor: am5.color("#000000"),
+    shadowBlur: 10,
+    shadowOpacity: 0.35,
   });
 
   tooltip.label.setAll({
-    fill: AM_COLORS.inkPrimary,
+    fill: am5.color("#f4f4f5"),
     fontSize: 12,
     fontFamily: "var(--font-inter, system-ui, sans-serif)",
   });

@@ -119,7 +119,7 @@ export default function DayOfWeekSpendChart({
 
     series.get("tooltip").label.set(
       "text",
-      "{categoryX}: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+      "[#a1a1aa]{categoryX}:[/] [#e6e6ea font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     series.data.setAll(data);

@@ -171,7 +171,7 @@ export default function CategoryTrendLineChart({
     // Rich Tooltip format
     series.get("tooltip").label.set(
       "text",
-      "{categoryX}: [medium]{valueY.formatNumber('#,###')}[/] " + currency + "\n[#7c7c88 text-xs]Daily: {dailySpend.formatNumber('#,###')} (" + currency + ")[/]"
+      "[#a1a1aa]{categoryX}:[/] [#e6e6ea font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]\n[#c8c8cf]Daily:[/] [#e6e6ea]{dailySpend.formatNumber('#,###')} " + currency + "[/]"
     );
 
     series.data.setAll(chartData);

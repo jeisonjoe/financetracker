@@ -136,7 +136,7 @@ export default function BudgetComparisonChart({
 
     budgetSeries.get("tooltip").label.set(
       "text",
-      "{categoryX} Budget: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+      "[#a1a1aa]{categoryX} Budget:[/] [#e6e6ea font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     // Actual Spent Column Series
@@ -163,7 +163,7 @@ export default function BudgetComparisonChart({
 
     spentSeries.get("tooltip").label.set(
       "text",
-      "{categoryX} Spent: [medium]{valueY.formatNumber('#,###')}[/] " + currency
+      "[#a1a1aa]{categoryX} Spent:[/] [#e6e6ea font-medium]{valueY.formatNumber('#,###')} " + currency + "[/]"
     );
 
     budgetSeries.data.setAll(activeCategories);
